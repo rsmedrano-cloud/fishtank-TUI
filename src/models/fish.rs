@@ -17,6 +17,8 @@ pub struct Fish {
     
     // State
     pub age: Duration,    // Time since birth
+    #[serde(default = "default_growth_stage")]
+    pub stage: GrowthStage,
     pub position: (f32, f32),  // Tank coordinates (0.0-1.0)
     pub velocity: (f32, f32),  // Movement direction
     pub state: FishState,
@@ -24,6 +26,10 @@ pub struct Fish {
     
     pub created_at: DateTime<Utc>,
     pub last_fed: Option<DateTime<Utc>>,
+}
+
+fn default_growth_stage() -> GrowthStage {
+    GrowthStage::Juvenile // Default for existing saves
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -66,6 +72,7 @@ impl Fish {
             health: 100.0,
             energy: 100.0,
             age: Duration::zero(),
+            stage: GrowthStage::Fry,
             position: (0.5, 0.5),
             velocity: (0.01, 0.0),
             state: FishState::Swimming,
@@ -85,6 +92,7 @@ impl Fish {
             health: 100.0,
             energy: 90.0,
             age: Duration::zero(),
+            stage: GrowthStage::Fry,
             position: (0.5, 0.5),
             velocity: (0.008, 0.0),  // Slower movement
             state: FishState::Swimming,
@@ -104,6 +112,7 @@ impl Fish {
             health: 100.0,
             energy: 100.0,
             age: Duration::zero(),
+            stage: GrowthStage::Fry,
             position: (0.5, 0.5),
             velocity: (0.015, 0.0),  // Faster movement
             state: FishState::Swimming,
@@ -123,6 +132,7 @@ impl Fish {
             health: 100.0,
             energy: 95.0,
             age: Duration::zero(),
+            stage: GrowthStage::Fry,
             position: (0.5, 0.5),
             velocity: (0.012, 0.0),
             state: FishState::Swimming,
@@ -142,6 +152,7 @@ impl Fish {
             health: 100.0,
             energy: 85.0,  // Larger, slower
             age: Duration::zero(),
+            stage: GrowthStage::Fry,
             position: (0.5, 0.5),
             velocity: (0.007, 0.0),  // Slowest, graceful
             state: FishState::Swimming,
@@ -149,7 +160,19 @@ impl Fish {
             created_at: Utc::now(),
             last_fed: None,
         }
+        }
     }
+
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub enum GrowthStage {
+    Fry,      // 0-12 hours
+    Juvenile, // 12-36 hours
+    Adult,    // > 36 hours
+}
+
+impl Fish {
+    // Methods
 
     /// Update fish stats based on elapsed time
     pub fn update(&mut self, delta_seconds: f64, water: &crate::persistence::WaterParams) {
@@ -158,26 +181,58 @@ impl Fish {
             return;
         }
 
+        // Update age (Game Time)
+        // delta_seconds passed here MUST be game time (3x real time)
+        self.age = self.age + Duration::seconds(delta_seconds as i64);
+
+        // Update Growth Stage
+        // Fry: < 12 hours
+        // Juvenile: 12 - 36 hours
+        // Adult: > 36 hours
+        let age_hours = self.age.num_hours();
+        self.stage = if age_hours < 12 {
+            GrowthStage::Fry
+        } else if age_hours < 36 {
+            GrowthStage::Juvenile
+        } else {
+            GrowthStage::Adult
+        };
+
         // Stat degradation rates (per real hour)
-        // Tamagotchi-style: slow decay for casual gameplay
+        // We receive GAME seconds. 1 Real Hour = 3 Game Hours.
+        // User wants ~12 Real Hours survival time.
+        // 12 Real Hours = 36 Game Hours.
+        // So stats should drop 100% in 36 Game Hours.
+        // Rate = 100 / 36 = ~2.78 per Game Hour.
+        
         let hours = delta_seconds / 3600.0;
         
-        // Species-specific hunger rates
-        let hunger_rate = match self.species {
-            Species::Goldfish => 3.5,
-            Species::Betta => 2.5,      // Slower (less active, territorial)
-            Species::Guppy => 4.5,       // Faster (small, active)
-            Species::NeonTetra => 3.0,   // Moderate
-            Species::Angelfish => 3.0,   // Moderate
+        // Base hunger rate (adjusted for 12h real time survival = 36h game time)
+        let base_rate = 3.0; 
+        
+        // Species modulation
+        let species_mod = match self.species {
+            Species::Guppy => 1.2,       // Faster
+            Species::Betta => 0.8,       // Slower
+            _ => 1.0,
         };
+        
+        // Stage modulation (Fry eat faster/more often relative to size, but let's keep simple)
+        let stage_mod = match self.stage {
+            GrowthStage::Fry => 1.5,
+            GrowthStage::Juvenile => 1.2,
+            GrowthStage::Adult => 1.0,
+        };
+
+        let hunger_rate = base_rate * species_mod * stage_mod;
         self.hunger = (self.hunger - (hunger_rate * hours as f32)).max(0.0);
         
-        // Happiness decreases slower (~1.5 per hour)
+        // Happiness decreases
         self.happiness = (self.happiness - (1.5 * hours as f32)).max(0.0);
         
         // Energy decreases during day, regenerates during rest
         if matches!(self.state, FishState::Resting) {
-            self.energy = (self.energy + (5.0 * hours as f32)).min(100.0);
+            self.energy = (self.energy + (10.0 * hours as f32)).min(100.0); // Faster sleep recovery
         } else {
             self.energy = (self.energy - (2.0 * hours as f32)).max(0.0);
         }
@@ -201,7 +256,7 @@ impl Fish {
 
         // Health is affected by hunger and happiness
         if self.hunger < 20.0 || self.happiness < 20.0 {
-            health_change -= 2.0;
+            health_change -= 3.0; // Starvation hurts more now
         } else if self.hunger > 50.0 && self.happiness > 50.0 && water.purity > 80.0 {
             // Slowly regenerate health when well cared for AND clean water
             health_change += 0.5;
@@ -209,19 +264,16 @@ impl Fish {
         
         self.health = (self.health + (health_change * hours as f32)).clamp(0.0, 100.0);
 
-        // Death check (only if severely neglected)
+        // Death check
         if self.health <= 0.0 {
             self.alive = false;
             self.state = FishState::Dead;
         }
 
-        // Update age
-        self.age = self.age + Duration::seconds(delta_seconds as i64);
-
         // Auto-transition to resting if energy is low
-        if self.energy < 30.0 && !matches!(self.state, FishState::Resting) {
+        if self.energy < 20.0 && !matches!(self.state, FishState::Resting) {
             self.state = FishState::Resting;
-        } else if self.energy > 60.0 && matches!(self.state, FishState::Resting) {
+        } else if self.energy > 80.0 && matches!(self.state, FishState::Resting) {
             self.state = FishState::Swimming;
         }
     }

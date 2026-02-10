@@ -55,6 +55,8 @@ pub struct SaveData {
     pub total_time: f64,
     #[serde(default)]
     pub equipment: Equipment,
+    #[serde(default)] // Toggle for pause/weekend mode
+    pub is_frozen: bool,
 }
 
 impl Default for SaveData {
@@ -67,6 +69,7 @@ impl Default for SaveData {
             water: WaterParams::default(),
             total_time: 0.0,
             equipment: Equipment::default(),
+            is_frozen: false,
         }
     }
 }

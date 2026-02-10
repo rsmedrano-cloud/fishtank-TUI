@@ -57,75 +57,96 @@ fn render_tank(frame: &mut Frame, app: &App, area: Rect) {
     frame.render_widget(block, area);
 
     // Tank rendering area
+    // Tank rendering area
     let tank_width = inner.width as usize;
     let tank_height = inner.height as usize;
-    let mut lines = Vec::new();
+    
+    // Create a 2D buffer for the tank characters
+    let mut buffer: Vec<Vec<Span>> = vec![vec![Span::raw(" "); tank_width]; tank_height];
 
-    if !app.save_data.fish.is_empty() {
-        // Color palette changes based on time
-        let (substrate_color, plant_color, bubble_color) = if is_night {
-            (Color::Rgb(50, 50, 60), Color::Rgb(30, 70, 30), Color::Rgb(100, 100, 130))
-        } else {
-            (Color::Rgb(100, 100, 100), Color::Green, Color::Cyan)
-        };
-        
-        for y in 0..tank_height {
-            let mut line_content = Vec::new();
-            let mut x = 0;
-
-            while x < tank_width {
-                let mut found_fish = false;
-                let mut advance_x = 1;
-                
-                // Check all fish
-                for fish in &app.save_data.fish {
-                    if !fish.alive {
-                        continue;
-                    }
-                    
-                    // Calculate exact fish position
-                    let fish_y = (fish.position.1 * tank_height as f32).round() as usize;
-                    let fish_x = (fish.position.0 * tank_width as f32).round() as usize;
-                    
-                    // Only render at exact position
-                    if y == fish_y && x == fish_x {
-                        let sprite = FishSprite::from_fish(fish, app.animation_frame);
-                        // Fish are yellow by default, maybe species colors later
-                        line_content.push(Span::styled(sprite, Style::default().fg(Color::Yellow)));
-                        advance_x = sprite.chars().count();
-                        found_fish = true;
-                        break;
-                    }
-                }
-
-                if !found_fish {
-                    if y == tank_height - 1 {
-                        line_content.push(Span::styled("▓", Style::default().fg(substrate_color)));
-                    } else if y == tank_height - 2 && (x < 3 || x > tank_width - 4) {
-                        line_content.push(Span::styled("Y", Style::default().fg(plant_color)));
-                    } else if y == 0 && x % 15 == 0 && app.animation_frame % 60 < 30 && !is_night {
-                        line_content.push(Span::styled("°", Style::default().fg(bubble_color)));
-                    } else {
-                        line_content.push(Span::raw(" "));
-                    }
-                }
-                
-                x += advance_x;
+    // Initialize buffer with background based on time
+    let (substrate_color, plant_color, bubble_color) = if is_night {
+        (Color::Rgb(50, 50, 60), Color::Rgb(30, 70, 30), Color::Rgb(100, 100, 130))
+    } else {
+        (Color::Rgb(100, 100, 100), Color::Green, Color::Cyan)
+    };
+    
+    for y in 0..tank_height {
+        for x in 0..tank_width {
+             if y == tank_height - 1 {
+                buffer[y][x] = Span::styled("▓", Style::default().fg(substrate_color));
+            } else if y == tank_height - 2 && (x < 3 || x > tank_width - 4) {
+                 buffer[y][x] = Span::styled("Y", Style::default().fg(plant_color));
+            } else if y == 0 && x % 15 == 0 && app.animation_frame % 60 < 30 && !is_night && !app.save_data.is_frozen {
+                 buffer[y][x] = Span::styled("°", Style::default().fg(bubble_color));
+            } else if app.save_data.is_frozen && y == tank_height / 2 && x == tank_width / 2 {
+                 // Nothing specifically, maybe freeze overlay logic later
             }
+        }
+    }
 
-            lines.push(Line::from(line_content));
+    // Render Fish
+    if !app.save_data.fish.is_empty() {
+        for fish in &app.save_data.fish {
+            if !fish.alive {
+                continue;
+            }
+            
+            // Calculate base position (top-left of sprite)
+            let base_y = (fish.position.1 * (tank_height - 2) as f32).round() as usize;
+            let base_x = (fish.position.0 * (tank_width - 5) as f32).round() as usize;
+            
+            let sprite_lines = FishSprite::from_fish(fish, app.animation_frame);
+            
+            for (offset_y, line) in sprite_lines.iter().enumerate() {
+                let y = base_y + offset_y;
+                if y >= tank_height { continue; }
+                
+                let mut current_x = base_x;
+                for char in line.chars() {
+                    if current_x < tank_width {
+                        // Color based on species/status? For now Yellow default
+                         let color = if matches!(fish.stage, crate::models::GrowthStage::Fry) {
+                             Color::White 
+                         } else {
+                             Color::Yellow
+                         };
+                         
+                        buffer[y][current_x] = Span::styled(char.to_string(), Style::default().fg(color));
+                        current_x += 1;
+                    }
+                }
+            }
         }
     } else {
-        let empty_y = tank_height / 2;
-        for y in 0..tank_height {
-            if y == empty_y {
-                lines.push(Line::from(format!("{:^width$}", "Press 'N' to add fish (up to 3)!", width = tank_width)));
-            } else if y == tank_height - 1 {
-                lines.push(Line::from("▓".repeat(tank_width)));
-            } else {
-                lines.push(Line::from(" ".repeat(tank_width)));
-            }
+        // Empty tank message
+        let empty_msg = "Press 'N' to add fish (up to 3)!";
+        let start_x = (tank_width.saturating_sub(empty_msg.len())) / 2;
+        let y = tank_height / 2;
+        
+        for (i, char) in empty_msg.chars().enumerate() {
+             if start_x + i < tank_width {
+                 buffer[y][start_x + i] = Span::raw(char.to_string());
+             }
         }
+    }
+    
+    // Draw Frozen Overlay if needed
+    if app.save_data.is_frozen {
+        let msg = "❄️ FROZEN ❄️";
+        let start_x = (tank_width.saturating_sub(msg.len())) / 2;
+        let y = 1; 
+        for (i, char) in msg.chars().enumerate() {
+             if start_x + i < tank_width {
+                 buffer[y][start_x + i] = Span::styled(char.to_string(), Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD));
+             }
+        }
+    }
+
+    // Convert buffer to Lines
+    let mut lines = Vec::new();
+    for row in buffer {
+        lines.push(Line::from(row));
     }
 
     let tank_content = Paragraph::new(lines);
@@ -266,12 +287,12 @@ fn render_controls(frame: &mut Frame, app: &App, area: Rect) {
     
     let controls_text = if fish_count > 0 {
         if app.save_data.fish.len() < 3 {
-            "[F]eed  [N]ew Fish  [W]ater  [E]quip  [R]estart  [Q]uit"
+            "v0.6 [F]eed [N]ew [W]ater [E]quip [R]estart [Z]Freeze [C]lear [Q]uit"
         } else {
-            "[F]eed  [W]ater  [E]quip  [R]estart  [Q]uit"
+            "v0.6 [F]eed [W]ater [E]quip [R]estart [Z]Freeze [C]lear [Q]uit"
         }
     } else {
-        "[N]ew Fish  [R]estart  [Q]uit"
+        "v0.6 [N]ew Fish [R]estart [Z]Freeze [C]lear [Q]uit"
     };
 
     let block = Block::default()

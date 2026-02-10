@@ -1,19 +1,87 @@
-use crate::models::{Fish, Species};
+use crate::models::{Fish, Species, GrowthStage};
 
 /// ASCII fish sprites - simple and compact like asciiquarium
 pub struct FishSprite;
 
 impl FishSprite {
-    /// Get fish sprite based on species
-    pub fn from_fish(fish: &Fish, _frame: u8) -> &'static str {
+    /// Get fish sprite based on species and growth stage
+    /// Returns a slice of strings (lines)
+    pub fn from_fish(fish: &Fish, _frame: u8) -> &[&'static str] {
         let facing_right = fish.velocity.0 >= 0.0;
         
-        match fish.species {
-            Species::Goldfish => if facing_right { "><>" } else { "<><" },
-            Species::Betta => if facing_right { ">∫>" } else { "<∫<" },        // Flowing fins
-            Species::Guppy => if facing_right { ">°>" } else { "<°<" },        // Small, round
-            Species::NeonTetra => if facing_right { ">->" } else { "<-<" },    // Thin, sleek
-            Species::Angelfish => if facing_right { ">^>" } else { "<^<" },    // Tall fins
+        match fish.stage {
+            GrowthStage::Fry => {
+                 if facing_right { &[".>"] } else { &["<."] }
+            },
+            GrowthStage::Juvenile => {
+                match fish.species {
+                    Species::Goldfish => if facing_right { &["><>"] } else { &["<><"] },
+                    Species::Betta => if facing_right { &[">∫>"] } else { &["<∫<"] },
+                    Species::Guppy => if facing_right { &[">°>"] } else { &["<°<"] },
+                    Species::NeonTetra => if facing_right { &[">->"] } else { &["<-<"] },
+                    Species::Angelfish => if facing_right { &[">^>"] } else { &["<^<"] },
+                }
+            },
+            GrowthStage::Adult => {
+                // Multi-line sprites for adults
+                match fish.species {
+                    Species::Goldfish => if facing_right { 
+                        &[
+                            "  ,·´", 
+                            "><(((º>" 
+                        ] 
+                    } else { 
+                        &[
+                             "  `·.",
+                             "<º)))><" 
+                        ] 
+                    },
+                    Species::Betta => if facing_right { 
+                        &[
+                            "  /\\", 
+                            "«(ll)>>" 
+                        ] 
+                    } else { 
+                        &[
+                             "  /\\", 
+                             "<<(ll)»" 
+                        ] 
+                    },
+                    Species::Guppy => if facing_right { 
+                        &[
+                            " ¸.·´", 
+                            "><>°>" 
+                        ] 
+                    } else { 
+                        &[
+                             " `·.¸", 
+                             "<°<><" 
+                        ] 
+                    },
+                    Species::NeonTetra => if facing_right { 
+                        &[
+                            "  __", 
+                            "><===>" 
+                        ] 
+                    } else { 
+                        &[
+                             "  __", 
+                             "<===><" 
+                        ] 
+                    },
+                    Species::Angelfish => if facing_right { 
+                        &[
+                            "   />", 
+                            " >( ))>" 
+                        ] 
+                    } else { 
+                        &[
+                             " <\\", 
+                             "<(( )<" 
+                        ] 
+                    },
+                }
+            }
         }
     }
 }

@@ -11,7 +11,9 @@ A retro-styled terminal user interface (TUI) aquarium simulator built in Rust. Y
 - 🌙 **Day/Night Cycle** - Tank dims at night, fish sleep (12h real = 24h game time)
 - 💧 **Water Quality System** - Manage Purity, pH, and Temperature to keep fish healthy
 - ⚙️ **Equipment** - Install filters & heaters to automate tank maintenance
-- ⏰ **Persistent World** - Fish age even when you're away (with smart 24hr catch-up)
+- 🧬 **Growth System** - Watch fry grow into massive adult fish (Multi-line ASCII!)
+- ❄️ **Weekend Mode** - Freeze your tank to pause time when you're busy
+- ⏰ **Persistent World** - Fish age even when you're away (with smart catch-up)
 - 🖼️ **Beautiful ASCII Graphics** - Clean dark tank with retro aesthetics and varied fish sprites
 - 💾 **Auto-Save** - Never lose your progress (saves every 30 seconds)
 - 🎮 **Casual Friendly** - Check in every 4-8 hours depending on species
@@ -89,6 +91,12 @@ Maintain your tank to keep fish healthy!
 - **pH:** Ideal is 7.0. Extremes allow disease.
 - **Temperature:** Ideal is 24-26°C. Fluctuates day/night.
 
+## 🧬 Growth & Care
+
+- **Growth Stages:** Fry (Tiny) -> Juvenile -> Adult (Big Multi-line).
+- **Time:** ~12 game hours (4 real hours) per stage.
+- **Freeze Mode (Z):** Pauses hunger/purity decay so you can sleep in on weekends!
+
 ## ⚙️ Equipment
 
 Automate your tank care:
@@ -106,6 +114,7 @@ Automate your tank care:
 | `F` | Feed all fish |
 | `W` | Clean tank (Water change) |
 | `E` | Install/Cycle Equipment |
+| `Z` | **Freeze/Unfreeze** (Weekend Mode) |
 | `R` | Restart tank (remove all fish) |
 | `C` | Clear notification messages |
 | `Q` or `ESC` | Quit (auto-saves) |
