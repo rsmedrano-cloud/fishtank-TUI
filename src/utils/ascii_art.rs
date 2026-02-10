@@ -1,6 +1,6 @@
 use crate::models::Fish;
 
-/// ASCII fish sprites with animation frames
+/// ASCII fish sprites - simple and compact like asciiquarium
 pub struct FishSprite;
 
 impl FishSprite {
@@ -10,9 +10,9 @@ impl FishSprite {
         let fish_type = fish_id.chars().last().unwrap_or('0');
         
         match fish_type as u8 % 3 {
-            0 => if facing_right { "><(((*>" } else { "<*)))><" },  // Classic fish
-            1 => if facing_right { "><>>" } else { "<<><" },         // Simple fish
-            _ => if facing_right { ">==>" } else { "<==" },          // Sleek fish
+            0 => if facing_right { "><>" } else { "<><" },      // Classic
+            1 => if facing_right { ">·>" } else { "<·<" },      // Dotted
+            _ => if facing_right { ">=>" } else { "<=<" },      // Arrow
         }
     }
     

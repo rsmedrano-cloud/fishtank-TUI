@@ -51,24 +51,23 @@ fn render_tank(frame: &mut Frame, app: &App, area: Rect) {
     if !app.save_data.fish.is_empty() {
         for y in 0..tank_height {
             let mut line_content = String::new();
-            let mut x = 0;
 
-            while x < tank_width {
-                let fx = (x as f32) / (tank_width as f32);
-                let fy = (y as f32) / (tank_height as f32);
-
+            for x in 0..tank_width {
                 let mut found_fish = false;
                 
-                // Check all fish
+                // Check all fish - render only at exact position
                 for fish in &app.save_data.fish {
                     if !fish.alive {
                         continue;
                     }
-                    let fish_dist = ((fish.position.0 - fx).powi(2) + (fish.position.1 - fy).powi(2)).sqrt();
-                    if fish_dist < 0.03 {  // Tighter detection
-                        let sprite = FishSprite::from_fish(fish, app.animation_frame);
-                        line_content.push_str(sprite);
-                        x += sprite.len();  // Skip ahead by sprite length
+                    
+                    // Calculate exact fish position
+                    let fish_y = (fish.position.1 * tank_height as f32).round() as usize;
+                    let fish_x = (fish.position.0 * tank_width as f32).round() as usize;
+                    
+                    // Only render at exact position
+                    if y == fish_y && x == fish_x {
+                        line_content.push_str(FishSprite::from_fish(fish, app.animation_frame));
                         found_fish = true;
                         break;
                     }
@@ -84,7 +83,6 @@ fn render_tank(frame: &mut Frame, app: &App, area: Rect) {
                     } else {
                         line_content.push(' ');
                     }
-                    x += 1;
                 }
             }
 
