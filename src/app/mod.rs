@@ -56,7 +56,14 @@ impl App {
             }
         }
         
+        // Update total time with offline duration
+        save_data.total_time += capped_seconds;
+        
+        // Calculate start time based on total game time
+        // The game start time should be `now - total_time` so that `now - start_time` equals `total_time`
+        // We use seconds for start_time calculation
         let now = Utc::now();
+        let start_time = now - chrono::Duration::seconds(save_data.total_time as i64);
         
         Ok(Self {
             state: AppState::Running,
@@ -66,24 +73,41 @@ impl App {
             auto_save_timer: 0.0,
             notifications,
             selected_species: 0,
-            start_time: now,
+            start_time,
         })
     }
 
     pub fn update(&mut self, delta_seconds: f64) {
+        // Update accumulated time
+        self.save_data.total_time += delta_seconds;
+        
         let is_night = self.is_night();
 
         // Update water quality
         let hours = delta_seconds / 3600.0;
         
         // Purity degrades over time (-1.0 per hour, faster with more fish)
-        let degradation_rate = 1.0 + (self.save_data.fish.len() as f32 * 0.5);
+        let mut degradation_rate = 1.0 + (self.save_data.fish.len() as f32 * 0.5);
+        
+        // Equipment effects
+        if self.save_data.equipment.has_filter {
+            degradation_rate *= 0.5; // Filter reduces dirtying by 50%
+        }
+        if self.save_data.equipment.has_plants {
+             degradation_rate *= 0.9; // Plants help a little (10%)
+        }
+
         self.save_data.water.purity = (self.save_data.water.purity - (degradation_rate * hours as f32)).max(0.0);
         
         // Temperature fluctuations (Warmer day, Cooler night)
         let target_temp = if is_night { 23.0 } else { 26.0 };
-        let temp_diff = target_temp - self.save_data.water.temperature;
-        self.save_data.water.temperature += temp_diff * (0.5 * hours as f32); // Slow drift
+        let mut temp_diff = target_temp - self.save_data.water.temperature;
+        
+        if self.save_data.equipment.has_heater {
+            temp_diff *= 0.2; // Heater stabilizes temp (80% reduction in fluctuation)
+        }
+        
+        self.save_data.water.temperature += temp_diff * (0.5 * hours as f32);
 
         // Update all fish
         for fish in &mut self.save_data.fish {
@@ -125,6 +149,9 @@ impl App {
             }
             KeyCode::Char('w') => {
                 self.clean_tank();
+            }
+            KeyCode::Char('e') => {
+                self.toggle_equipment();
             }
             _ => {}
         }
@@ -210,6 +237,27 @@ impl App {
         self.save_data.water.purity = (self.save_data.water.purity + 30.0).min(100.0);
         self.save_data.water.ph = 7.0; // Stabilize pH
         self.add_notification("🧼 Water changed! Tank is cleaner.");
+    }
+
+    fn toggle_equipment(&mut self) {
+        let eq = &mut self.save_data.equipment;
+        
+        // Simple cycle: None -> Filter -> Heater -> Plants -> All -> None
+        if !eq.has_filter && !eq.has_heater && !eq.has_plants {
+            eq.has_filter = true;
+            self.add_notification("⚙️ Filter installed!");
+        } else if eq.has_filter && !eq.has_heater {
+            eq.has_heater = true;
+            self.add_notification("🌡️ Heater installed!");
+        } else if eq.has_filter && eq.has_heater && !eq.has_plants {
+             eq.has_plants = true;
+             self.add_notification("🌿 Plants added!");
+        } else {
+            eq.has_filter = false;
+            eq.has_heater = false;
+            eq.has_plants = false;
+            self.add_notification("❌ All equipment removed.");
+        }
     }
 
     /// Get current game time (accelerated 2x - 12 hour real = 24 hour game)

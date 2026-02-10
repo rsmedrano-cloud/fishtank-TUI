@@ -10,6 +10,7 @@ A retro-styled terminal user interface (TUI) aquarium simulator built in Rust. Y
 - 🐠 **5 Unique Fish Species** - Goldfish, Betta, Guppy, Neon Tetra, Angelfish
 - 🌙 **Day/Night Cycle** - Tank dims at night, fish sleep (12h real = 24h game time)
 - 💧 **Water Quality System** - Manage Purity, pH, and Temperature to keep fish healthy
+- ⚙️ **Equipment** - Install filters & heaters to automate tank maintenance
 - ⏰ **Persistent World** - Fish age even when you're away (with smart 24hr catch-up)
 - 🖼️ **Beautiful ASCII Graphics** - Clean dark tank with retro aesthetics and varied fish sprites
 - 💾 **Auto-Save** - Never lose your progress (saves every 30 seconds)
@@ -88,7 +89,15 @@ Maintain your tank to keep fish healthy!
 - **pH:** Ideal is 7.0. Extremes allow disease.
 - **Temperature:** Ideal is 24-26°C. Fluctuates day/night.
 
-## 🎯 Controls
+## ⚙️ Equipment
+
+Automate your tank care:
+
+- **Filter ⚡:** Reduces dirty water buildup by 50%.
+- **Heater 🌡️:** Keeps temperature stable day and night.
+- **Plants �:** Small cleaning bonus + aesthetic.
+
+## �🎯 Controls
 
 
 | Key | Action |
@@ -96,6 +105,7 @@ Maintain your tank to keep fish healthy!
 | `N` | Cycle species & add fish (up to 3) |
 | `F` | Feed all fish |
 | `W` | Clean tank (Water change) |
+| `E` | Install/Cycle Equipment |
 | `R` | Restart tank (remove all fish) |
 | `C` | Clear notification messages |
 | `Q` or `ESC` | Quit (auto-saves) |

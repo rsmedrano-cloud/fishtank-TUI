@@ -53,6 +53,7 @@ cargo run --release
 - Press `N` multiple times to see all 5 species
 - Keep your water **Purity** high (>80%) for happy fish
 - Press `W` to clean the tank if Purity drops
+- Install a **Filter** (`E`) to keep water clean longer
 - Fish rest automatically when tired
 - Red indicators = critical - feed immediately!
 - You'll get warnings when returning after being away

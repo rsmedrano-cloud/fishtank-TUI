@@ -24,6 +24,24 @@ impl Default for WaterParams {
     }
 }
 
+/// Tank equipment status
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Equipment {
+    pub has_filter: bool,      // Reduces purity loss by 50%
+    pub has_heater: bool,      // Reduces temperature drift by 80%
+    pub has_plants: bool,      // Reduces purity loss by 10%
+}
+
+impl Default for Equipment {
+    fn default() -> Self {
+        Self {
+            has_filter: false,
+            has_heater: false,
+            has_plants: false,
+        }
+    }
+}
+
 /// Main save data structure
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SaveData {
@@ -31,8 +49,12 @@ pub struct SaveData {
     pub last_saved: DateTime<Utc>,
     pub fish: Vec<Fish>,
     pub player_name: String,
-    #[serde(default)] // Use default if missing (backward compatibility)
+    #[serde(default)]
     pub water: WaterParams,
+    #[serde(default)]
+    pub total_time: f64,
+    #[serde(default)]
+    pub equipment: Equipment,
 }
 
 impl Default for SaveData {
@@ -43,6 +65,8 @@ impl Default for SaveData {
             fish: Vec::new(),
             player_name: "Player".to_string(),
             water: WaterParams::default(),
+            total_time: 0.0,
+            equipment: Equipment::default(),
         }
     }
 }

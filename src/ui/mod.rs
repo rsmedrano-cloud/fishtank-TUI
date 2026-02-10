@@ -215,6 +215,33 @@ fn render_stats(frame: &mut Frame, app: &App, area: Rect) {
         Span::raw(format!("pH: {:.1}", water.ph)),
     ]));
 
+    // Equipment Section
+    lines.push(Line::from(""));
+    lines.push(Line::from(Span::styled("⚙️ Equipment", Style::default().fg(Color::Cyan))));
+    
+    let eq = &app.save_data.equipment;
+    let mut eq_spans = Vec::new();
+    
+    if eq.has_filter {
+        eq_spans.push(Span::styled("⚡Filter ", Style::default().fg(Color::Green)));
+    } else {
+        eq_spans.push(Span::styled("Filter ", Style::default().fg(Color::DarkGray)));
+    }
+    
+    if eq.has_heater {
+        eq_spans.push(Span::styled("🌡️Heater ", Style::default().fg(Color::Red)));
+    } else {
+        eq_spans.push(Span::styled("Heater ", Style::default().fg(Color::DarkGray)));
+    }
+    
+    if eq.has_plants {
+        eq_spans.push(Span::styled("🌿Plants", Style::default().fg(Color::Green)));
+    } else {
+        eq_spans.push(Span::styled("Plants", Style::default().fg(Color::DarkGray)));
+    }
+    
+    lines.push(Line::from(eq_spans));
+
     // Notifications
     if !app.notifications.is_empty() {
         lines.push(Line::from(""));
@@ -239,9 +266,9 @@ fn render_controls(frame: &mut Frame, app: &App, area: Rect) {
     
     let controls_text = if fish_count > 0 {
         if app.save_data.fish.len() < 3 {
-            "[F]eed  [N]ew Fish  [W]ater  [R]estart  [Q]uit"
+            "[F]eed  [N]ew Fish  [W]ater  [E]quip  [R]estart  [Q]uit"
         } else {
-            "[F]eed  [W]ater  [R]estart  [Q]uit"
+            "[F]eed  [W]ater  [E]quip  [R]estart  [Q]uit"
         }
     } else {
         "[N]ew Fish  [R]estart  [Q]uit"
