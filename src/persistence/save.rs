@@ -6,13 +6,33 @@ use std::fs;
 
 use crate::models::Fish;
 
+/// Water quality parameters
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WaterParams {
+    pub purity: f32,       // 0.0 - 100.0 (General cleanliness)
+    pub ph: f32,           // 0.0 - 14.0 (Acidity/Alkalinity, Ideal: 7.0)
+    pub temperature: f32,  // Celsius (Ideal: 24-26)
+}
+
+impl Default for WaterParams {
+    fn default() -> Self {
+        Self {
+            purity: 100.0,
+            ph: 7.0,
+            temperature: 25.0,
+        }
+    }
+}
+
 /// Main save data structure
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SaveData {
     pub version: String,
     pub last_saved: DateTime<Utc>,
-    pub fish: Vec<Fish>,  // Changed from Option<Fish> to Vec<Fish>
+    pub fish: Vec<Fish>,
     pub player_name: String,
+    #[serde(default)] // Use default if missing (backward compatibility)
+    pub water: WaterParams,
 }
 
 impl Default for SaveData {
@@ -22,6 +42,7 @@ impl Default for SaveData {
             last_saved: Utc::now(),
             fish: Vec::new(),
             player_name: "Player".to_string(),
+            water: WaterParams::default(),
         }
     }
 }

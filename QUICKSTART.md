@@ -26,7 +26,7 @@ cargo run --release
 
 ## Controls
 
-- `N` - New fish (up to 3)
+- `N` - Cycle species & add fish (up to 3)
 - `F` - Feed all fish
 - `R` - Restart tank
 - `C` - Clear messages
@@ -49,6 +49,10 @@ cargo run --release
 ## Tips
 
 - Keep all stats above 40% (green/yellow zone)
+- Each species has different hunger rates - Guppies eat more!
+- Press `N` multiple times to see all 5 species
+- Keep your water **Purity** high (>80%) for happy fish
+- Press `W` to clean the tank if Purity drops
 - Fish rest automatically when tired
 - Red indicators = critical - feed immediately!
 - You'll get warnings when returning after being away

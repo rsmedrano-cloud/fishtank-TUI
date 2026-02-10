@@ -7,12 +7,14 @@ A retro-styled terminal user interface (TUI) aquarium simulator built in Rust. Y
 
 ## ✨ Features
 
-- 🐠 **Tamagotchi-Style Gameplay** - Care for up to 3 virtual goldfish over weeks
+- 🐠 **5 Unique Fish Species** - Goldfish, Betta, Guppy, Neon Tetra, Angelfish
+- 🌙 **Day/Night Cycle** - Tank dims at night, fish sleep (12h real = 24h game time)
+- 💧 **Water Quality System** - Manage Purity, pH, and Temperature to keep fish healthy
 - ⏰ **Persistent World** - Fish age even when you're away (with smart 24hr catch-up)
-- 🎨 **Beautiful ASCII Graphics** - Clean dark tank with retro aesthetics
+- 🖼️ **Beautiful ASCII Graphics** - Clean dark tank with retro aesthetics and varied fish sprites
 - 💾 **Auto-Save** - Never lose your progress (saves every 30 seconds)
-- 🎮 **Casual Friendly** - Check in every 6-8 hours to feed your fish
-- 🔋 **Lightweight** - Minimal resource usage (<10MB RAM, 816KB binary)
+- 🎮 **Casual Friendly** - Check in every 4-8 hours depending on species
+- 🔋 **Lightweight** - Minimal resource usage (<10MB RAM, 825KB binary)
 
 ## 🎮 Gameplay
 
@@ -61,12 +63,39 @@ cargo build --release
 ./target/release/fishtank
 ```
 
+## 🐟 Fish Species
+
+| Species | Sprite | Hunger Rate | Traits |
+|---------|--------|-------------|--------|
+| 🟡 **Goldfish** | `><>` | Normal (3.5/hr) | Balanced, classic |
+| 🔵 **Betta** | `>∫>` | Slow (2.5/hr) | Flowing fins, territorial |
+| 🟢 **Guppy** | `>°>` | Fast (4.5/hr) | Small, active, cheerful |
+| 🔴 **Neon Tetra** | `>->` | Normal (3.0/hr) | Sleek, schools well |
+| ⚪ **Angelfish** | `>^>` | Normal (3.0/hr) | Graceful, slow-moving |
+
+## 🌙 Day/Night Cycle
+
+The game features an accelerated time system where **1 real hour = 2 game hours**.
+
+- **Day (06:00 - 18:00):** Bright tank, active fish 🌞
+- **Night (18:00 - 06:00):** Dim blue tank, fish rest to regain energy 🌙
+
+## 💧 Water Quality
+
+Maintain your tank to keep fish healthy!
+
+- **Purity:** Decreases over time and when feeding. Keep it above 80% for bonus health.
+- **pH:** Ideal is 7.0. Extremes allow disease.
+- **Temperature:** Ideal is 24-26°C. Fluctuates day/night.
+
 ## 🎯 Controls
+
 
 | Key | Action |
 |-----|--------|
-| `N` | Add a new fish to the tank (up to 3) |
-| `F` | Feed your fish |
+| `N` | Cycle species & add fish (up to 3) |
+| `F` | Feed all fish |
+| `W` | Clean tank (Water change) |
 | `R` | Restart tank (remove all fish) |
 | `C` | Clear notification messages |
 | `Q` or `ESC` | Quit (auto-saves) |

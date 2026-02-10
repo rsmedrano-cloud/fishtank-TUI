@@ -1,3 +1,3 @@
 pub mod save;
 
-pub use save::SaveData;
+pub use save::{SaveData, WaterParams};

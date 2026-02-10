@@ -29,6 +29,22 @@ pub struct Fish {
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum Species {
     Goldfish,
+    Betta,
+    Guppy,
+    NeonTetra,
+    Angelfish,
+}
+
+impl Species {
+    pub fn name(&self) -> &'static str {
+        match self {
+            Species::Goldfish => "Goldfish",
+            Species::Betta => "Betta",
+            Species::Guppy => "Guppy",
+            Species::NeonTetra => "Neon Tetra",
+            Species::Angelfish => "Angelfish",
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -59,8 +75,84 @@ impl Fish {
         }
     }
 
+    pub fn new_betta(name: String) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            species: Species::Betta,
+            name,
+            hunger: 85.0,  // Slower hunger (territorial, less active)
+            happiness: 70.0,
+            health: 100.0,
+            energy: 90.0,
+            age: Duration::zero(),
+            position: (0.5, 0.5),
+            velocity: (0.008, 0.0),  // Slower movement
+            state: FishState::Swimming,
+            alive: true,
+            created_at: Utc::now(),
+            last_fed: None,
+        }
+    }
+
+    pub fn new_guppy(name: String) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            species: Species::Guppy,
+            name,
+            hunger: 70.0,  // Faster hunger (small, active)
+            happiness: 85.0,  // Naturally cheerful
+            health: 100.0,
+            energy: 100.0,
+            age: Duration::zero(),
+            position: (0.5, 0.5),
+            velocity: (0.015, 0.0),  // Faster movement
+            state: FishState::Swimming,
+            alive: true,
+            created_at: Utc::now(),
+            last_fed: None,
+        }
+    }
+
+    pub fn new_neon_tetra(name: String) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            species: Species::NeonTetra,
+            name,
+            hunger: 75.0,
+            happiness: 80.0,  // Happy in schools
+            health: 100.0,
+            energy: 95.0,
+            age: Duration::zero(),
+            position: (0.5, 0.5),
+            velocity: (0.012, 0.0),
+            state: FishState::Swimming,
+            alive: true,
+            created_at: Utc::now(),
+            last_fed: None,
+        }
+    }
+
+    pub fn new_angelfish(name: String) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            species: Species::Angelfish,
+            name,
+            hunger: 80.0,
+            happiness: 75.0,
+            health: 100.0,
+            energy: 85.0,  // Larger, slower
+            age: Duration::zero(),
+            position: (0.5, 0.5),
+            velocity: (0.007, 0.0),  // Slowest, graceful
+            state: FishState::Swimming,
+            alive: true,
+            created_at: Utc::now(),
+            last_fed: None,
+        }
+    }
+
     /// Update fish stats based on elapsed time
-    pub fn update(&mut self, delta_seconds: f64) {
+    pub fn update(&mut self, delta_seconds: f64, water: &crate::persistence::WaterParams) {
         if !self.alive {
             self.state = FishState::Dead;
             return;
@@ -70,8 +162,15 @@ impl Fish {
         // Tamagotchi-style: slow decay for casual gameplay
         let hours = delta_seconds / 3600.0;
         
-        // Hunger decreases ~3-4 points per hour (needs feeding every 6-8 hours)
-        self.hunger = (self.hunger - (3.5 * hours as f32)).max(0.0);
+        // Species-specific hunger rates
+        let hunger_rate = match self.species {
+            Species::Goldfish => 3.5,
+            Species::Betta => 2.5,      // Slower (less active, territorial)
+            Species::Guppy => 4.5,       // Faster (small, active)
+            Species::NeonTetra => 3.0,   // Moderate
+            Species::Angelfish => 3.0,   // Moderate
+        };
+        self.hunger = (self.hunger - (hunger_rate * hours as f32)).max(0.0);
         
         // Happiness decreases slower (~1.5 per hour)
         self.happiness = (self.happiness - (1.5 * hours as f32)).max(0.0);
@@ -83,13 +182,32 @@ impl Fish {
             self.energy = (self.energy - (2.0 * hours as f32)).max(0.0);
         }
 
+        // Health penalties from Environment
+        let mut health_change = 0.0;
+        
+        // Water Purity Impact
+        if water.purity < 50.0 {
+            health_change -= 2.0; // Dirty water hurts health
+            self.happiness -= 2.0 * hours as f32; // And happiness
+        }
+        if water.purity < 20.0 {
+            health_change -= 5.0; // Very dirty water is dangerous
+        }
+
+        // Temperature Impact (Idea: 24-26 is good)
+        if water.temperature < 20.0 || water.temperature > 30.0 {
+             health_change -= 1.0;
+        }
+
         // Health is affected by hunger and happiness
         if self.hunger < 20.0 || self.happiness < 20.0 {
-            self.health = (self.health - (2.0 * hours as f32)).max(0.0);
-        } else if self.hunger > 50.0 && self.happiness > 50.0 {
-            // Slowly regenerate health when well cared for
-            self.health = (self.health + (0.5 * hours as f32)).min(100.0);
+            health_change -= 2.0;
+        } else if self.hunger > 50.0 && self.happiness > 50.0 && water.purity > 80.0 {
+            // Slowly regenerate health when well cared for AND clean water
+            health_change += 0.5;
         }
+        
+        self.health = (self.health + (health_change * hours as f32)).clamp(0.0, 100.0);
 
         // Death check (only if severely neglected)
         if self.health <= 0.0 {
@@ -104,6 +222,21 @@ impl Fish {
         if self.energy < 30.0 && !matches!(self.state, FishState::Resting) {
             self.state = FishState::Resting;
         } else if self.energy > 60.0 && matches!(self.state, FishState::Resting) {
+            self.state = FishState::Swimming;
+        }
+    }
+
+    /// Update fish state based on time of day (call from App::update)
+    pub fn update_for_time_of_day(&mut self, is_night: bool) {
+        if !self.alive {
+            return;
+        }
+
+        if is_night && !matches!(self.state, FishState::Resting | FishState::Dead) {
+            // Fish rest at night
+            self.state = FishState::Resting;
+        } else if !is_night && matches!(self.state, FishState::Resting) && self.energy > 40.0 {
+            // Wake up during day if energy is sufficient
             self.state = FishState::Swimming;
         }
     }

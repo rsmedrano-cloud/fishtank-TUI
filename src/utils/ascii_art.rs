@@ -1,25 +1,20 @@
-use crate::models::Fish;
+use crate::models::{Fish, Species};
 
 /// ASCII fish sprites - simple and compact like asciiquarium
 pub struct FishSprite;
 
 impl FishSprite {
-    /// Get fish sprite based on fish index (for variety)
-    pub fn get_sprite_for_fish(fish_id: &str, facing_right: bool) -> &'static str {
-        // Use last char of UUID to determine fish style
-        let fish_type = fish_id.chars().last().unwrap_or('0');
-        
-        match fish_type as u8 % 3 {
-            0 => if facing_right { "><>" } else { "<><" },      // Classic
-            1 => if facing_right { ">·>" } else { "<·<" },      // Dotted
-            _ => if facing_right { ">=>" } else { "<=<" },      // Arrow
-        }
-    }
-    
-    /// Get fish sprite based on velocity
+    /// Get fish sprite based on species
     pub fn from_fish(fish: &Fish, _frame: u8) -> &'static str {
         let facing_right = fish.velocity.0 >= 0.0;
-        Self::get_sprite_for_fish(&fish.id.to_string(), facing_right)
+        
+        match fish.species {
+            Species::Goldfish => if facing_right { "><>" } else { "<><" },
+            Species::Betta => if facing_right { ">∫>" } else { "<∫<" },        // Flowing fins
+            Species::Guppy => if facing_right { ">°>" } else { "<°<" },        // Small, round
+            Species::NeonTetra => if facing_right { ">->" } else { "<-<" },    // Thin, sleek
+            Species::Angelfish => if facing_right { ">^>" } else { "<^<" },    // Tall fins
+        }
     }
 }
 

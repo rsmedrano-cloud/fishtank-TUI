@@ -5,6 +5,7 @@ mod ui;
 mod utils;
 
 use anyhow::Result;
+use chrono::{DateTime, Utc};
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event},
     execute,
