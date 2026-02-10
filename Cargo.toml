@@ -1,0 +1,37 @@
+[package]
+name = "fishtank"
+version = "0.1.0"
+edition = "2021"
+authors = ["Fishtank Contributors"]
+description = "A retro-styled TUI aquarium simulator - Tamagotchi for your terminal"
+license = "MIT"
+repository = "https://github.com/yourusername/fishtank-TUI"
+keywords = ["tui", "terminal", "game", "aquarium", "tamagotchi"]
+categories = ["games", "command-line-utilities"]
+
+[dependencies]
+# TUI Framework
+ratatui = "0.26"
+crossterm = "0.27"
+
+# Serialization & Config
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+
+# Time Management
+chrono = { version = "0.4", features = ["serde"] }
+
+# Randomization
+rand = "0.8"
+
+# Utilities
+anyhow = "1.0"
+directories = "5.0"
+uuid = { version = "1.6", features = ["v4", "serde"] }
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
