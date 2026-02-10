@@ -19,6 +19,8 @@ pub struct Fish {
     pub age: Duration,    // Time since birth
     #[serde(default = "default_growth_stage")]
     pub stage: GrowthStage,
+    #[serde(default = "default_gender")]
+    pub gender: Gender,
     pub position: (f32, f32),  // Tank coordinates (0.0-1.0)
     pub velocity: (f32, f32),  // Movement direction
     pub state: FishState,
@@ -26,10 +28,22 @@ pub struct Fish {
     
     pub created_at: DateTime<Utc>,
     pub last_fed: Option<DateTime<Utc>>,
+    #[serde(default)]
+    pub mate_cooldown: i64, // Seconds until next breeding attempt
 }
 
 fn default_growth_stage() -> GrowthStage {
     GrowthStage::Juvenile // Default for existing saves
+}
+
+fn default_gender() -> Gender {
+    if rand::random() { Gender::Male } else { Gender::Female }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub enum Gender {
+    Male,
+    Female,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -39,6 +53,9 @@ pub enum Species {
     Guppy,
     NeonTetra,
     Angelfish,
+    Clownfish,
+    Koi,
+    Pufferfish,
 }
 
 impl Species {
@@ -49,6 +66,9 @@ impl Species {
             Species::Guppy => "Guppy",
             Species::NeonTetra => "Neon Tetra",
             Species::Angelfish => "Angelfish",
+            Species::Clownfish => "Clownfish",
+            Species::Koi => "Koi",
+            Species::Pufferfish => "Pufferfish",
         }
     }
 }
@@ -62,6 +82,10 @@ pub enum FishState {
 }
 
 impl Fish {
+    fn random_gender() -> Gender {
+        if rand::random() { Gender::Male } else { Gender::Female }
+    }
+
     pub fn new_goldfish(name: String) -> Self {
         Self {
             id: Uuid::new_v4(),
@@ -73,12 +97,14 @@ impl Fish {
             energy: 100.0,
             age: Duration::zero(),
             stage: GrowthStage::Fry,
+            gender: Self::random_gender(),
             position: (0.5, 0.5),
             velocity: (0.01, 0.0),
             state: FishState::Swimming,
             alive: true,
             created_at: Utc::now(),
             last_fed: None,
+            mate_cooldown: 0,
         }
     }
 
@@ -87,18 +113,20 @@ impl Fish {
             id: Uuid::new_v4(),
             species: Species::Betta,
             name,
-            hunger: 85.0,  // Slower hunger (territorial, less active)
+            hunger: 85.0,
             happiness: 70.0,
             health: 100.0,
             energy: 90.0,
             age: Duration::zero(),
             stage: GrowthStage::Fry,
+            gender: Self::random_gender(),
             position: (0.5, 0.5),
-            velocity: (0.008, 0.0),  // Slower movement
+            velocity: (0.008, 0.0),
             state: FishState::Swimming,
             alive: true,
             created_at: Utc::now(),
             last_fed: None,
+            mate_cooldown: 0,
         }
     }
 
@@ -107,18 +135,20 @@ impl Fish {
             id: Uuid::new_v4(),
             species: Species::Guppy,
             name,
-            hunger: 70.0,  // Faster hunger (small, active)
-            happiness: 85.0,  // Naturally cheerful
+            hunger: 70.0,
+            happiness: 85.0,
             health: 100.0,
             energy: 100.0,
             age: Duration::zero(),
             stage: GrowthStage::Fry,
+            gender: Self::random_gender(),
             position: (0.5, 0.5),
-            velocity: (0.015, 0.0),  // Faster movement
+            velocity: (0.015, 0.0),
             state: FishState::Swimming,
             alive: true,
             created_at: Utc::now(),
             last_fed: None,
+            mate_cooldown: 0,
         }
     }
 
@@ -128,17 +158,19 @@ impl Fish {
             species: Species::NeonTetra,
             name,
             hunger: 75.0,
-            happiness: 80.0,  // Happy in schools
+            happiness: 80.0,
             health: 100.0,
             energy: 95.0,
             age: Duration::zero(),
             stage: GrowthStage::Fry,
+            gender: Self::random_gender(),
             position: (0.5, 0.5),
             velocity: (0.012, 0.0),
             state: FishState::Swimming,
             alive: true,
             created_at: Utc::now(),
             last_fed: None,
+            mate_cooldown: 0,
         }
     }
 
@@ -150,19 +182,88 @@ impl Fish {
             hunger: 80.0,
             happiness: 75.0,
             health: 100.0,
-            energy: 85.0,  // Larger, slower
+            energy: 85.0,
             age: Duration::zero(),
             stage: GrowthStage::Fry,
+            gender: Self::random_gender(),
             position: (0.5, 0.5),
-            velocity: (0.007, 0.0),  // Slowest, graceful
+            velocity: (0.007, 0.0),
             state: FishState::Swimming,
             alive: true,
             created_at: Utc::now(),
             last_fed: None,
+            mate_cooldown: 0,
         }
+    }
+    
+    pub fn new_clownfish(name: String) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            species: Species::Clownfish,
+            name,
+            hunger: 75.0,
+            happiness: 90.0,
+            health: 100.0,
+            energy: 95.0,
+            age: Duration::zero(),
+            stage: GrowthStage::Fry,
+            gender: Self::random_gender(),
+            position: (0.5, 0.5),
+            velocity: (0.01, 0.0),
+            state: FishState::Swimming,
+            alive: true,
+            created_at: Utc::now(),
+            last_fed: None,
+            mate_cooldown: 0,
         }
     }
 
+    pub fn new_koi(name: String) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            species: Species::Koi,
+            name,
+            hunger: 90.0, // Big fish
+            happiness: 80.0,
+            health: 100.0,
+            energy: 80.0,
+            age: Duration::zero(),
+            stage: GrowthStage::Fry,
+            gender: Self::random_gender(),
+            position: (0.5, 0.5),
+            velocity: (0.005, 0.0), // Slow and majestic
+            state: FishState::Swimming,
+            alive: true,
+            created_at: Utc::now(),
+            last_fed: None,
+            mate_cooldown: 0,
+        }
+    }
+
+    pub fn new_pufferfish(name: String) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            species: Species::Pufferfish,
+            name,
+            hunger: 70.0, 
+            happiness: 70.0,
+            health: 100.0,
+            energy: 90.0,
+            age: Duration::zero(),
+            stage: GrowthStage::Fry,
+            gender: Self::random_gender(),
+            position: (0.5, 0.5),
+            velocity: (0.008, 0.0),
+            state: FishState::Swimming,
+            alive: true,
+            created_at: Utc::now(),
+            last_fed: None,
+            mate_cooldown: 0,
+        }
+    }
+
+
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum GrowthStage {
@@ -273,9 +374,54 @@ impl Fish {
         // Auto-transition to resting if energy is low
         if self.energy < 20.0 && !matches!(self.state, FishState::Resting) {
             self.state = FishState::Resting;
-        } else if self.energy > 80.0 && matches!(self.state, FishState::Resting) {
             self.state = FishState::Swimming;
         }
+        
+        // Cooldown decay
+        if self.mate_cooldown > 0 {
+            self.mate_cooldown -= delta_seconds as i64;
+        }
+    }
+    
+    /// Attempt to breed with another fish
+    pub fn try_breed(&mut self, partner: &mut Fish) -> Option<Fish> {
+        // Validation
+        if !self.alive || !partner.alive { return None; }
+        if self.species != partner.species { return None; }
+        if self.gender == partner.gender { return None; }
+        if self.stage != GrowthStage::Adult || partner.stage != GrowthStage::Adult { return None; }
+        
+        // Check cooldowns
+        if self.mate_cooldown > 0 || partner.mate_cooldown > 0 { return None; }
+        
+        // Check stats (Must be healthy and happy)
+        if self.health < 80.0 || partner.health < 80.0 { return None; }
+        if self.happiness < 80.0 || partner.happiness < 80.0 { return None; }
+        
+        // Success!
+        // Reset cooldowns (e.g. 5 minutes = 300 game seconds)
+        // 5 real minutes = 900 game seconds
+        let cooldown = 900;
+        self.mate_cooldown = cooldown;
+        partner.mate_cooldown = cooldown;
+        
+        // Spawn Fry
+        // Name will be placeholder, parent logic in App will name it
+        let mut fry = match self.species {
+            Species::Goldfish => Fish::new_goldfish("Baby".to_string()),
+            Species::Betta => Fish::new_betta("Baby".to_string()),
+            Species::Guppy => Fish::new_guppy("Baby".to_string()),
+            Species::NeonTetra => Fish::new_neon_tetra("Baby".to_string()),
+            Species::Angelfish => Fish::new_angelfish("Baby".to_string()),
+            Species::Clownfish => Fish::new_clownfish("Baby".to_string()),
+            Species::Koi => Fish::new_koi("Baby".to_string()),
+            Species::Pufferfish => Fish::new_pufferfish("Baby".to_string()),
+        };
+        
+        // Inherit some position
+        fry.position = self.position;
+        
+        Some(fry)
     }
 
     /// Update fish state based on time of day (call from App::update)

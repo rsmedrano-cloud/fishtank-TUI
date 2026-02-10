@@ -57,6 +57,8 @@ pub struct SaveData {
     pub equipment: Equipment,
     #[serde(default)] // Toggle for pause/weekend mode
     pub is_frozen: bool,
+    #[serde(default)] // Toggle for theme selection
+    pub theme_index: usize,
 }
 
 impl Default for SaveData {
@@ -70,6 +72,7 @@ impl Default for SaveData {
             total_time: 0.0,
             equipment: Equipment::default(),
             is_frozen: false,
+            theme_index: 0,
         }
     }
 }

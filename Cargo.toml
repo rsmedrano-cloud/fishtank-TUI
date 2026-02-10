@@ -11,7 +11,7 @@ categories = ["games", "command-line-utilities"]
 
 [dependencies]
 # TUI Framework
-ratatui = "0.26"
+ratatui = { version = "0.26", features = ["serde"] }
 crossterm = "0.27"
 
 # Serialization & Config

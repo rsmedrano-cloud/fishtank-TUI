@@ -128,13 +128,39 @@ impl App {
         self.save_data.water.temperature += temp_diff * (0.5 * hours as f32);
 
         // Update all fish
+        let mut new_fry = Vec::new();
+
+        // 1. Basic Update & Movement (Iterate all)
         for fish in &mut self.save_data.fish {
-            // Pass water params to fish update
-            fish.update(game_delta, &self.save_data.water);
-            fish.update_position(delta_seconds); // Movement is always REAL time for smooth animation
-            
-            // Apply day/night behavior
-            fish.update_for_time_of_day(is_night);
+             fish.update(game_delta, &self.save_data.water);
+             fish.update_for_time_of_day(is_night);
+             fish.update_position(delta_seconds);
+        }
+
+        // 2. Breeding Pass (Separate to avoid complex borrow issues in one loop)
+        // We need mutable access to pairs.
+        if self.save_data.fish.len() < 10 {
+            let count = self.save_data.fish.len();
+            for i in 0..count {
+                for j in (i+1)..count {
+                    // Use split_at_mut to get two mutable references
+                    let (left, right) = self.save_data.fish.split_at_mut(j);
+                    // left[i] is first fish, right[0] is second fish
+                    
+                    if let Some(fry) = left[i].try_breed(&mut right[0]) {
+                        new_fry.push(fry);
+                    }
+                }
+            }
+        }
+        
+        // Add new fry
+        for mut fry in new_fry {
+             if self.save_data.fish.len() < 10 {
+                 fry.name = format!("Baby {}", self.save_data.fish.len() + 1);
+                 self.save_data.fish.push(fry);
+                 self.add_notification("💕 Love is in the water! A baby is born!".to_string());
+             }
         }
 
         // Animation frame
@@ -174,6 +200,9 @@ impl App {
             KeyCode::Char('z') => {
                 self.toggle_freeze();
             }
+            KeyCode::Char('t') => {
+                self.toggle_theme();
+            }
             _ => {}
         }
     }
@@ -199,16 +228,16 @@ impl App {
         }
     }
 
-    fn new_fish(&mut self) {
-        const MAX_FISH: usize = 3;
+    pub fn new_fish(&mut self) {
+        const MAX_FISH: usize = 10;
         
         if self.save_data.fish.len() >= MAX_FISH {
             self.add_notification(format!("⚠️  Tank full! Maximum {} fish.", MAX_FISH));
             return;
         }
 
-        // Rotate species
-        self.selected_species = (self.selected_species + 1) % 5;
+        // Rotate species (0..7)
+        self.selected_species = (self.selected_species + 1) % 8;
         
         // Get species info
         let (species_name, emoji) = match self.selected_species {
@@ -217,12 +246,21 @@ impl App {
             2 => ("Guppy", "🟢"),
             3 => ("Neon Tetra", "🔴"),
             4 => ("Angelfish", "⚪"),
+            5 => ("Clownfish", "🟠"),
+            6 => ("Koi", "🎏"),
+            7 => ("Pufferfish", "🐡"),
             _ => ("Goldfish", "🟡"),
         };
         
-        // Generate name based on count
-        let fish_names = ["Goldie", "Bubbles", "Splash"];
-        let name = fish_names[self.save_data.fish.len()].to_string();
+        // Generate name based on count (or random)
+        let fish_names = [
+            "Goldie", "Bubbles", "Splash", "Finny", "Gill", 
+            "Dorsal", "Nemo", "Dory", "Marlin", "Coral", 
+            "Sushi", "Sashimi", "Scale", "Ripple", "Wave",
+            "Azure", "Crimson", "Shadow", "Flash", "Spark"
+        ];
+        let name_idx = self.save_data.fish.len() % fish_names.len();
+        let name = fish_names[name_idx].to_string();
         
         // Create fish based on selected species
         let fish = match self.selected_species {
@@ -231,6 +269,9 @@ impl App {
             2 => Fish::new_guppy(name.clone()),
             3 => Fish::new_neon_tetra(name.clone()),
             4 => Fish::new_angelfish(name.clone()),
+            5 => Fish::new_clownfish(name.clone()),
+            6 => Fish::new_koi(name.clone()),
+            7 => Fish::new_pufferfish(name.clone()),
             _ => Fish::new_goldfish(name.clone()),
         };
         
@@ -288,6 +329,17 @@ impl App {
         } else {
             self.add_notification("▶️  World UNPAUSED!");
         }
+    }
+
+    fn toggle_theme(&mut self) {
+        let themes = crate::ui::theme::ThemeManager::get_themes();
+        self.save_data.theme_index = (self.save_data.theme_index + 1) % themes.len();
+        self.add_notification(format!("🎨 Theme: {}", themes[self.save_data.theme_index].name));
+    }
+
+    pub fn get_current_theme(&self) -> crate::ui::theme::Theme {
+        let themes = crate::ui::theme::ThemeManager::get_themes();
+        themes.get(self.save_data.theme_index).cloned().unwrap_or_default()
     }
 
     /// Get current game time (accelerated 2x - 12 hour real = 24 hour game)

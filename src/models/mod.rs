@@ -1,3 +1,3 @@
 pub mod fish;
 
-pub use fish::{Fish, FishState, Species, GrowthStage};
+pub use fish::{Fish, FishState, Species, GrowthStage, Gender};

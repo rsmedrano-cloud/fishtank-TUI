@@ -20,6 +20,9 @@ impl FishSprite {
                     Species::Guppy => if facing_right { &[">°>"] } else { &["<°<"] },
                     Species::NeonTetra => if facing_right { &[">->"] } else { &["<-<"] },
                     Species::Angelfish => if facing_right { &[">^>"] } else { &["<^<"] },
+                    Species::Clownfish => if facing_right { &[">|>"] } else { &["<|<"] },
+                    Species::Koi => if facing_right { &[">S>"] } else { &["<S<"] },
+                    Species::Pufferfish => if facing_right { &[">()"] } else { &["()<"] },
                 }
             },
             GrowthStage::Adult => {
@@ -78,6 +81,39 @@ impl FishSprite {
                         &[
                              " <\\", 
                              "<(( )<" 
+                        ] 
+                    },
+                    Species::Clownfish => if facing_right { 
+                        &[
+                            "   ,·", 
+                            "><|(|)?>" 
+                        ] 
+                    } else { 
+                        &[
+                             "  ·,", 
+                             "<?(|)|><" 
+                        ] 
+                    },
+                    Species::Koi => if facing_right { 
+                        &[
+                            "   _,,", 
+                            "><((('>" 
+                        ] 
+                    } else { 
+                        &[
+                             "   ,,_", 
+                             "<')))><" 
+                        ] 
+                    },
+                    Species::Pufferfish => if facing_right { 
+                        &[
+                            "  ..", 
+                            ">(())>" 
+                        ] 
+                    } else { 
+                        &[
+                             "  ..", 
+                             "<(( ))<" 
                         ] 
                     },
                 }

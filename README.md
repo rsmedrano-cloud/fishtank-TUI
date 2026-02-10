@@ -13,6 +13,7 @@ A retro-styled terminal user interface (TUI) aquarium simulator built in Rust. Y
 - ⚙️ **Equipment** - Install filters & heaters to automate tank maintenance
 - 🧬 **Growth System** - Watch fry grow into massive adult fish (Multi-line ASCII!)
 - ❄️ **Weekend Mode** - Freeze your tank to pause time when you're busy
+- 🎨 **Themes** - Customize your tank with 5 visual styles (Ocean, Matrix, Retro, etc.)
 - ⏰ **Persistent World** - Fish age even when you're away (with smart catch-up)
 - 🖼️ **Beautiful ASCII Graphics** - Clean dark tank with retro aesthetics and varied fish sprites
 - 💾 **Auto-Save** - Never lose your progress (saves every 30 seconds)
@@ -97,6 +98,15 @@ Maintain your tank to keep fish healthy!
 - **Time:** ~12 game hours (4 real hours) per stage.
 - **Freeze Mode (Z):** Pauses hunger/purity decay so you can sleep in on weekends!
 
+## 🎨 Themes
+
+Press `T` to cycle visual styles:
+- **Classic:** Standard dark mode.
+- **Ocean Deep:** Blue/White aquatic look.
+- **Matrix:** Hacker green.
+- **Retro Amber:** Old monochrome monitor.
+- **Zen Garden:** Bright paper-like style.
+
 ## ⚙️ Equipment
 
 Automate your tank care:
@@ -114,6 +124,7 @@ Automate your tank care:
 | `F` | Feed all fish |
 | `W` | Clean tank (Water change) |
 | `E` | Install/Cycle Equipment |
+| `T` | **Change Theme** (Cycle presets) |
 | `Z` | **Freeze/Unfreeze** (Weekend Mode) |
 | `R` | Restart tank (remove all fish) |
 | `C` | Clear notification messages |
