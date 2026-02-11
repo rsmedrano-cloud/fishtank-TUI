@@ -48,6 +48,10 @@ pub struct SaveData {
     pub version: String,
     pub last_saved: DateTime<Utc>,
     pub fish: Vec<Fish>,
+    #[serde(default)]
+    pub decorations: Vec<crate::models::Decoration>,
+    #[serde(default)]
+    pub algae_level: f32, // 0.0 to 100.0
     pub player_name: String,
     #[serde(default)]
     pub water: WaterParams,
@@ -67,6 +71,8 @@ impl Default for SaveData {
             version: env!("CARGO_PKG_VERSION").to_string(),
             last_saved: Utc::now(),
             fish: Vec::new(),
+            decorations: Vec::new(),
+            algae_level: 0.0,
             player_name: "Player".to_string(),
             water: WaterParams::default(),
             total_time: 0.0,

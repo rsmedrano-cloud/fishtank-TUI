@@ -47,10 +47,16 @@ fn render_tank(frame: &mut Frame, app: &App, area: Rect) {
     
     let theme = app.get_current_theme();
     
+    let title = if app.save_data.is_frozen {
+        format!("Fish Tank - {} ❄️ FROZEN ❄️", theme.name)
+    } else {
+        format!("Fish Tank - {}", theme.name)
+    };
+
     let block = Block::default()
         .title(vec![
             Span::raw("🐠 "),
-            Span::styled(format!("Fish Tank - {}", theme.name), Style::default().add_modifier(Modifier::BOLD)),
+            Span::styled(title, Style::default().add_modifier(Modifier::BOLD)),
             Span::raw(" "),
             Span::styled(time_str, Style::default().fg(if is_night { Color::Blue } else { theme.title_color })),
         ])
@@ -94,6 +100,49 @@ fn render_tank(frame: &mut Frame, app: &App, area: Rect) {
                  buffer[y][x] = Span::styled("°", Style::default().fg(bubble_color));
             } else if app.save_data.is_frozen && y == tank_height / 2 && x == tank_width / 2 {
                  // Nothing specifically, maybe freeze overlay logic later
+            }
+        }
+    }
+
+    // Render Decorations (Background Layer)
+    for deco in &app.save_data.decorations {
+        let sprite_lines = deco.get_sprite();
+        let sprite_height = sprite_lines.len();
+        
+        // anchor to bottom (above substrate which is last line)
+        // substrate is at tank_height - 1
+        // so object bottom is tank_height - 2
+        let base_y = (tank_height - 1).saturating_sub(sprite_height);
+        
+        // Keep X relative
+        let base_x = (deco.position.0 * (tank_width - 15) as f32).round() as usize; 
+        
+        for (offset_y, line) in sprite_lines.iter().enumerate() {
+            let y = base_y + offset_y;
+            if y >= tank_height { continue; }
+            
+            let mut current_x = base_x;
+            for char in line.chars() {
+                if current_x < tank_width {
+                    // Use a subtle color for decorations
+                     let color = if is_night {
+                         // Slightly visible at night
+                         match deco.deco_type {
+                             crate::models::DecorationType::Plant => Color::Green, // Keep green but maybe it will look dark on black
+                             _ => Color::Gray,
+                         }
+                     } else {
+                         match deco.deco_type {
+                             crate::models::DecorationType::Plant => theme.plant_color,
+                             crate::models::DecorationType::Rock => Color::Gray,
+                             crate::models::DecorationType::Castle => Color::White,
+                             crate::models::DecorationType::Skull => Color::White,
+                         }
+                     };
+                    
+                    buffer[y][current_x] = Span::styled(char.to_string(), Style::default().fg(color));
+                    current_x += 1;
+                }
             }
         }
     }
@@ -161,6 +210,41 @@ fn render_tank(frame: &mut Frame, app: &App, area: Rect) {
         }
     }
 
+    // Render Particles (Foreground)
+    for p in &app.particles {
+         let y = (p.y * (tank_height - 1) as f32).round() as usize;
+         let x = (p.x * (tank_width - 1) as f32).round() as usize;
+         
+         // Don't render on substrate (last line)
+         if y < tank_height - 1 && x < tank_width {
+             // Light blue for bubbles
+             buffer[y][x] = Span::styled(p.symbol.to_string(), Style::default().fg(Color::Cyan)); 
+         }
+    }
+    
+    // Render Algae Overlay (Dirty Glass)
+    let algae_level = app.save_data.algae_level;
+    if algae_level > 1.0 {
+        let density = algae_level / 100.0; // 0.0 to 1.0
+        
+        for y in 0..tank_height-1 { // Don't cover substrate fully? or maybe yes
+            for x in 0..tank_width {
+                // Simple pseudo-random hash for static noise
+                let seed = (x as u32).wrapping_mul(374761393).wrapping_add((y as u32).wrapping_mul(668265263));
+                let rand_val = (seed % 100) as f32 / 100.0;
+                
+                if rand_val < density {
+                    // Algae pixel!
+                    // If density is high, use thicker chars
+                    let char = if density > 0.6 && rand_val < density * 0.5 { "#" } else { "." };
+                    
+                    // Green slime color
+                    buffer[y][x] = Span::styled(char, Style::default().fg(Color::Green));
+                }
+            }
+        }
+    }
+
     // Convert buffer to Lines
     let mut lines = Vec::new();
     for row in buffer {
@@ -198,7 +282,14 @@ fn render_stats(frame: &mut Frame, app: &App, area: Rect) {
                 
                 let health_color = if fish.health > 70.0 { Color::Green } else { Color::Red };
                 
-                // One line per fish: [ICON] Name (S) H:99%
+                // Status icon (check sleep/eat)
+                let status_icon = match fish.state {
+                    crate::models::FishState::Resting => " 💤", // Sleeping
+                    crate::models::FishState::Eating => " 🍖",  // Eating
+                    _ => "",
+                };
+                
+                // One line per fish: [ICON] Name (S) H:99% Zzz
                 if fish.alive {
                     lines.push(Line::from(vec![
                         Span::styled("🐟 ", Style::default().fg(Color::Yellow)),
@@ -207,7 +298,7 @@ fn render_stats(frame: &mut Frame, app: &App, area: Rect) {
                         Span::styled("❤", Style::default().fg(health_color)),
                         Span::raw(format!("{:.0}% ", fish.health)),
                         Span::styled("🍗", Style::default().fg(Color::Magenta)),
-                        Span::raw(format!("{:.0}%", fish.hunger)),
+                        Span::raw(format!("{:.0}%{}", fish.hunger, status_icon)),
                     ]));
                 } else {
                     lines.push(Line::from(vec![
@@ -344,14 +435,16 @@ fn render_stats(frame: &mut Frame, app: &App, area: Rect) {
 fn render_controls(frame: &mut Frame, app: &App, area: Rect) {
     let fish_count = app.save_data.fish.iter().filter(|f| f.alive).count();
     
+    let freeze_text = if app.save_data.is_frozen { "[Z]Unfreeze" } else { "[Z]Freeze" };
+    
     let controls_text = if fish_count > 0 {
-        if app.save_data.fish.len() < 3 {
-            "v0.8 [F]eed [N]ew [W]ater [E]quip [R]estart [T]heme [Z]Freeze [C]lear [Q]uit"
+        if app.save_data.fish.len() < 10 {
+            format!("v0.9.4 [F]eed [N]ew [W]ater [E]quip [S]crub [T]heme [D]ecorate [X]Remove {}", freeze_text)
         } else {
-            "v0.8 [F]eed [W]ater [E]quip [R]estart [T]heme [Z]Freeze [C]lear [Q]uit"
+            format!("v0.9.4 [F]eed [W]ater [E]quip [S]crub [T]heme [D]ecorate [X]Remove {}", freeze_text)
         }
     } else {
-        "v0.8 [N]ew Fish [R]estart [T]heme [Z]Freeze [C]lear [Q]uit"
+        format!("v0.9.4 [N]ew [D]ecorate [X]Remove [R]estart [Q]uit {}", freeze_text)
     };
 
     let block = Block::default()

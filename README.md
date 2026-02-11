@@ -2,43 +2,70 @@
 
 A retro-styled terminal user interface (TUI) aquarium simulator built in Rust. Your very own Tamagotchi-style fish that lives in your terminal!
 
-![Version](https://img.shields.io/badge/version-0.1.0-blue)
+![Version](https://img.shields.io/badge/version-0.9.3-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
+
+![Fishtank Gameplay](Screenshots/swappy-20260211-001324.png)
 
 ## ✨ Features
 
-- 🐠 **5 Unique Fish Species** - Goldfish, Betta, Guppy, Neon Tetra, Angelfish
-- 🌙 **Day/Night Cycle** - Tank dims at night, fish sleep (12h real = 24h game time)
-- 💧 **Water Quality System** - Manage Purity, pH, and Temperature to keep fish healthy
-- ⚙️ **Equipment** - Install filters & heaters to automate tank maintenance
-- 🧬 **Growth System** - Watch fry grow into massive adult fish (Multi-line ASCII!)
-- ❄️ **Weekend Mode** - Freeze your tank to pause time when you're busy
-- 🎨 **Themes** - Customize your tank with 5 visual styles (Ocean, Matrix, Retro, etc.)
-- ⏰ **Persistent World** - Fish age even when you're away (with smart catch-up)
-- 🖼️ **Beautiful ASCII Graphics** - Clean dark tank with retro aesthetics and varied fish sprites
-- 💾 **Auto-Save** - Never lose your progress (saves every 30 seconds)
-- 🎮 **Casual Friendly** - Check in every 4-8 hours depending on species
-- 🔋 **Lightweight** - Minimal resource usage (<10MB RAM, 825KB binary)
+- 🐠 **8 Unique Fish Species** - Goldfish, Betta, Guppy, Neon Tetra, Angelfish, Clownfish, Koi, Pufferfish!
+- � **Decorations** - Customize your tank with high-quality ASCII Castles, Plants, and Rocks.
+- 🫧 **Particle Effects** - Dynamic bubble streams and floating particles.
+- �🌙 **Day/Night Cycle** - Tank dims at night, fish sleep (1 real sec = 3 game sec).
+- 💧 **Water Quality System** - Manage Purity, pH, and Temperature.
+- ⚙️ **Equipment** - Install filters & heaters to automate tank maintenance.
+- 🧬 **Breeding System** - Watch fish multiply! (If happy & healthy).
+- ❄️ **Weekend Freeze Mode** - Pause time when you're busy.
+- 🎨 **Themes** - 5 visual styles (Ocean, Matrix, Retro, Zen, etc.).
+- 💾 **Auto-Save & Offline Progress** - Your fish live while you're away.
 
 ## 🎮 Gameplay
 
-Your fish has needs that must be maintained:
+### 🐟 The Fish
+- **Needs**: Hunger 🍽️, Happiness 😊, Health ❤️, Energy ⚡.
+- **Lifespan**: Fish grow from Fry -> Juvenile -> Adult.
+- **Breeding**: Adults of same species can have babies if space allows (Max 10 fish).
 
-- **🍽️ Hunger** - Feed every 6-8 hours (press `F`)
-- **😊 Happiness** - Affected by care and interaction
-- **❤️ Health** - Degrades if hunger/happiness are low
-- **⚡ Energy** - Fish rest when tired
+### � The Living Tank
+- **Decorations**: Press `D` to add items. Press `X` to remove them.
+- **Bubbles**: Install a **Filter** (`E`) to see bubbles rise!
+- **Collision**: Items won't overlap, ensuring a clean look.
 
-Fish live for approximately **30 days** if well cared for. Neglect will eventually lead to death (permanent).
+### 🌙 Time Cycle
+- **Day (06:00 - 18:00):** Active fish, bright tank.
+- **Night (18:00 - 06:00):** Fish sleep (drift slowly), dim blue light.
 
-### Offline Progression
+## 🎯 Controls
 
-When you close the app, your fish continues aging. However:
-- Maximum 24 hours of decay is applied (even if away longer)
-- Fish won't die while you're away - you'll have a chance to recover
-- Get clear warnings when returning if fish is in danger
+| Key | Action |
+|-----|--------|
+| `N` | **New Fish** (Cycle species 0-7) |
+| `F` | **Feed** all fish |
+| `W` | **Water Change** (Clean tank) |
+| `E` | **Equipment** Shop (Filter/Heater) |
+| `D` | **Decorate** (Add random item) |
+| `X` | **Remove Decoration** (Undo last) |
+| `Shift+X` | **Clear All Decorations** |
+| `T` | **Theme** Switcher |
+| `Z` | **Freeze/Unfreeze** (Pause game) |
+| `R` | **Restart** (Wipe save) |
+| `Q` | **Quit** (Auto-save) |
 
-## 📦 Installation
+## 🐟 Fish Species
+
+| Species | Sprite | Traits |
+|---------|--------|--------|
+| 🟡 **Goldfish** | `><>` | Balanced classic. |
+| 🔵 **Betta** | `>∫>` | Flowing fins, solitary. |
+| 🟢 **Guppy** | `>°>` | Fast & cheerful. |
+| 🔴 **Neon Tetra** | `>->` | Small, schools well. |
+| ⚪ **Angelfish** | `>^>` | Shape vertical, graceful. |
+| 🟠 **Clownfish** | `>||>` | Striped, likes anemones. |
+| 🎏 **Koi** | `>==>` | Large, long-lived. |
+| 🐡 **Pufferfish** | `(o)>` | Spiky & round! |
+
+## � Installation
 
 ### Requirements
 
@@ -67,86 +94,14 @@ cargo build --release
 ./target/release/fishtank
 ```
 
-## 🐟 Fish Species
-
-| Species | Sprite | Hunger Rate | Traits |
-|---------|--------|-------------|--------|
-| 🟡 **Goldfish** | `><>` | Normal (3.5/hr) | Balanced, classic |
-| 🔵 **Betta** | `>∫>` | Slow (2.5/hr) | Flowing fins, territorial |
-| 🟢 **Guppy** | `>°>` | Fast (4.5/hr) | Small, active, cheerful |
-| 🔴 **Neon Tetra** | `>->` | Normal (3.0/hr) | Sleek, schools well |
-| ⚪ **Angelfish** | `>^>` | Normal (3.0/hr) | Graceful, slow-moving |
-
-## 🌙 Day/Night Cycle
-
-The game features an accelerated time system where **1 real hour = 2 game hours**.
-
-- **Day (06:00 - 18:00):** Bright tank, active fish 🌞
-- **Night (18:00 - 06:00):** Dim blue tank, fish rest to regain energy 🌙
-
-## 💧 Water Quality
-
-Maintain your tank to keep fish healthy!
-
-- **Purity:** Decreases over time and when feeding. Keep it above 80% for bonus health.
-- **pH:** Ideal is 7.0. Extremes allow disease.
-- **Temperature:** Ideal is 24-26°C. Fluctuates day/night.
-
-## 🧬 Growth & Care
-
-- **Growth Stages:** Fry (Tiny) -> Juvenile -> Adult (Big Multi-line).
-- **Time:** ~12 game hours (4 real hours) per stage.
-- **Freeze Mode (Z):** Pauses hunger/purity decay so you can sleep in on weekends!
-
-## 🎨 Themes
-
-Press `T` to cycle visual styles:
-- **Classic:** Standard dark mode.
-- **Ocean Deep:** Blue/White aquatic look.
-- **Matrix:** Hacker green.
-- **Retro Amber:** Old monochrome monitor.
-- **Zen Garden:** Bright paper-like style.
-
-## ⚙️ Equipment
-
-Automate your tank care:
-
-- **Filter ⚡:** Reduces dirty water buildup by 50%.
-- **Heater 🌡️:** Keeps temperature stable day and night.
-- **Plants �:** Small cleaning bonus + aesthetic.
-
-## �🎯 Controls
-
-
-| Key | Action |
-|-----|--------|
-| `N` | Cycle species & add fish (up to 3) |
-| `F` | Feed all fish |
-| `W` | Clean tank (Water change) |
-| `E` | Install/Cycle Equipment |
-| `T` | **Change Theme** (Cycle presets) |
-| `Z` | **Freeze/Unfreeze** (Weekend Mode) |
-| `R` | Restart tank (remove all fish) |
-| `C` | Clear notification messages |
-| `Q` or `ESC` | Quit (auto-saves) |
-
-## 📁 Files
-
-- **Save File**: `~/.config/fishtank/save.json`
-- **Binary Location**: `~/.local/bin/fishtank` (after install)
-
 ## 🚀 Roadmap
 
-This is the MVP (v0.1.0) with basic features. Future updates planned:
-
-- [ ] Multiple fish species (Betta, Guppy, Neon Tetra)
-- [ ] Breeding and genetics system
-- [ ] Mini-games for interaction
-- [ ] Decorations and tank customization
-- [ ] XP and progression system
-- [ ] Custom themes
-- [ ] Water quality management
-- [ ] Equipment (filters, heaters, lights)
+- [x] Multiple fish species & Breeding
+- [x] Decorations & Particles (Living Tank Update)
+- [x] Water quality & Equipment
+- [ ] **Algae System**: Green growth on walls needing cleaning.
+- [ ] **Economy**: Earn money to buy fancy items.
+- [ ] **Mini-games**: Catch food, race fish.
 
 ## 🛠️ Development
 

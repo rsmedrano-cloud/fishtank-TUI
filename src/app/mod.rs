@@ -19,6 +19,27 @@ pub struct App {
     pub notifications: Vec<String>,
     pub selected_species: usize,  // For cycling through species
     pub start_time: chrono::DateTime<Utc>,  // For day/night cycle calculation
+    pub particles: Vec<Particle>,
+}
+
+pub struct Particle {
+    pub x: f32,
+    pub y: f32,
+    pub speed: f32,
+    pub symbol: char,
+    pub lifetime: f32,
+}
+
+impl Particle {
+    pub fn new(x: f32, y: f32, symbol: char) -> Self {
+        Self {
+            x,
+            y,
+            speed: 0.05 + (rand::random::<f32>() * 0.05),
+            symbol,
+            lifetime: 1.0, // 0.0 - 1.0 (fade out?) or just time based
+        }
+    }
 }
 
 impl App {
@@ -81,6 +102,7 @@ impl App {
             notifications,
             selected_species: 0,
             start_time,
+            particles: Vec::new(),
         })
     }
 
@@ -166,6 +188,29 @@ impl App {
         // Animation frame
         self.animation_frame = (self.animation_frame + 1) % 60;
 
+        // --- PARTICLE SYSTEMS ---
+        // Spawn bubbles if filter is on
+        if self.save_data.equipment.has_filter && !self.save_data.is_frozen {
+            if rand::random::<f32>() < 0.2 { // 20% chance per frame
+                 self.particles.push(Particle::new(0.1 + (rand::random::<f32>() * 0.05), 0.9, 'o'));
+            }
+            if rand::random::<f32>() < 0.2 { 
+                 self.particles.push(Particle::new(0.85 + (rand::random::<f32>() * 0.05), 0.9, '.'));
+            }
+        }
+        
+        // Update Particles
+        // delta_seconds is available in scope
+        let dt = delta_seconds as f32;
+        self.particles.retain_mut(|p| {
+            p.y -= p.speed * dt;
+            
+            // Wobble
+            p.x += (rand::random::<f32>() - 0.5) * 0.01;
+            
+            p.y > 0.0 // Keep if below surface
+        });
+
         // Auto-save every 30 seconds
         self.auto_save_timer += delta_seconds;
         if self.auto_save_timer >= 30.0 {
@@ -202,6 +247,52 @@ impl App {
             }
             KeyCode::Char('t') => {
                 self.toggle_theme();
+            }
+            KeyCode::Char('d') => {
+                // Add a random decoration
+                let types = [crate::models::DecorationType::Rock, crate::models::DecorationType::Plant, crate::models::DecorationType::Castle, crate::models::DecorationType::Skull];
+                
+                // Try to find a non-overlapping spot (Max 10 attempts)
+                let mut placed = false;
+                for _ in 0..10 {
+                    let rand_type = types[rand::random::<usize>() % types.len()];
+                    
+                     // Random X, centered somewhat (0.1 to 0.9)
+                    let x = rand::random::<f32>().clamp(0.1, 0.9);
+                    
+                    // Check overlap with existing decorations
+                    // Heuristic: Assume width ~ 15% (0.15)
+                    let width_allowance = 0.15;
+                    let overlap = self.save_data.decorations.iter().any(|d| (d.position.0 - x).abs() < width_allowance);
+                    
+                    if !overlap {
+                        let deco = crate::models::Decoration::new(rand_type, (x, 0.0));
+                        self.save_data.decorations.push(deco);
+                        self.add_notification(format!("🌿 Added new decoration!"));
+                        placed = true;
+                        break;
+                    }
+                }
+                
+                if !placed {
+                    self.add_notification("❌ Not enough space for decoration!".to_string());
+                }
+            }
+            KeyCode::Char('s') | KeyCode::Char('S') => {
+                 if self.save_data.algae_level > 0.0 {
+                     self.save_data.algae_level = (self.save_data.algae_level - 20.0).max(0.0);
+                     self.add_notification("🧽 Scrubbed the glass!".to_string());
+                 } else {
+                     self.add_notification("✨ Glass is already sparkling clean!".to_string());
+                 }
+            }
+            KeyCode::Char('x') => {
+                self.save_data.decorations.pop(); // Remove last one
+                self.add_notification("🗑️ Removed last decoration.".to_string());
+            }
+            KeyCode::Char('X') => {
+                self.save_data.decorations.clear(); // Remove all
+                self.add_notification("💥 Cleared all decorations!".to_string());
             }
             _ => {}
         }

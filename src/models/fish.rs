@@ -86,6 +86,10 @@ impl Fish {
         if rand::random() { Gender::Male } else { Gender::Female }
     }
 
+    fn random_position() -> (f32, f32) {
+        (rand::random::<f32>().clamp(0.1, 0.9), rand::random::<f32>().clamp(0.1, 0.9))
+    }
+
     pub fn new_goldfish(name: String) -> Self {
         Self {
             id: Uuid::new_v4(),
@@ -98,7 +102,7 @@ impl Fish {
             age: Duration::zero(),
             stage: GrowthStage::Fry,
             gender: Self::random_gender(),
-            position: (0.5, 0.5),
+            position: Self::random_position(),
             velocity: (0.01, 0.0),
             state: FishState::Swimming,
             alive: true,
@@ -120,7 +124,7 @@ impl Fish {
             age: Duration::zero(),
             stage: GrowthStage::Fry,
             gender: Self::random_gender(),
-            position: (0.5, 0.5),
+            position: Self::random_position(),
             velocity: (0.008, 0.0),
             state: FishState::Swimming,
             alive: true,
@@ -142,7 +146,7 @@ impl Fish {
             age: Duration::zero(),
             stage: GrowthStage::Fry,
             gender: Self::random_gender(),
-            position: (0.5, 0.5),
+            position: Self::random_position(),
             velocity: (0.015, 0.0),
             state: FishState::Swimming,
             alive: true,
@@ -164,7 +168,7 @@ impl Fish {
             age: Duration::zero(),
             stage: GrowthStage::Fry,
             gender: Self::random_gender(),
-            position: (0.5, 0.5),
+            position: Self::random_position(),
             velocity: (0.012, 0.0),
             state: FishState::Swimming,
             alive: true,
@@ -186,7 +190,7 @@ impl Fish {
             age: Duration::zero(),
             stage: GrowthStage::Fry,
             gender: Self::random_gender(),
-            position: (0.5, 0.5),
+            position: Self::random_position(),
             velocity: (0.007, 0.0),
             state: FishState::Swimming,
             alive: true,
@@ -208,7 +212,7 @@ impl Fish {
             age: Duration::zero(),
             stage: GrowthStage::Fry,
             gender: Self::random_gender(),
-            position: (0.5, 0.5),
+            position: Self::random_position(),
             velocity: (0.01, 0.0),
             state: FishState::Swimming,
             alive: true,
@@ -230,7 +234,7 @@ impl Fish {
             age: Duration::zero(),
             stage: GrowthStage::Fry,
             gender: Self::random_gender(),
-            position: (0.5, 0.5),
+            position: Self::random_position(),
             velocity: (0.005, 0.0), // Slow and majestic
             state: FishState::Swimming,
             alive: true,
@@ -252,7 +256,7 @@ impl Fish {
             age: Duration::zero(),
             stage: GrowthStage::Fry,
             gender: Self::random_gender(),
-            position: (0.5, 0.5),
+            position: Self::random_position(),
             velocity: (0.008, 0.0),
             state: FishState::Swimming,
             alive: true,
@@ -478,13 +482,15 @@ impl Fish {
 
     /// Simple movement AI
     pub fn update_position(&mut self, delta_seconds: f64) {
-        if !self.alive || matches!(self.state, FishState::Resting | FishState::Dead) {
+        if !self.alive || matches!(self.state, FishState::Dead) {
             return;
         }
 
-        // Random wandering with simple boundary bouncing
+        // Speed Factor
         let speed = if matches!(self.state, FishState::Eating) {
             0.5
+        } else if matches!(self.state, FishState::Resting) {
+            0.1 // Drifting while sleeping
         } else {
             1.0
         };
