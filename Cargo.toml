@@ -1,6 +1,6 @@
 [package]
 name = "fishtank"
-version = "0.1.0"
+version = "0.11.0"
 edition = "2021"
 authors = ["Fishtank Contributors"]
 description = "A retro-styled TUI aquarium simulator - Tamagotchi for your terminal"

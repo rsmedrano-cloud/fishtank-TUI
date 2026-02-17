@@ -1,8 +1,9 @@
 use ratatui::{
-    layout::{Constraint, Direction, Layout, Rect},
+    backend::Backend,
+    layout::{Constraint, Direction, Layout, Rect, Alignment},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, Paragraph},
+    widgets::{Block, Borders, Paragraph, Gauge, Clear},
     Frame,
 };
 
@@ -27,14 +28,152 @@ pub fn render(frame: &mut Frame, app: &App) {
     let main_chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
-            Constraint::Percentage(70),  // Tank view
-            Constraint::Percentage(30),  // Stats panel
+            Constraint::Percentage(80),  // Tank view
+            Constraint::Percentage(20),  // Stats panel
         ])
         .split(chunks[0]);
 
     render_tank(frame, app, main_chunks[0]);
     render_stats(frame, app, main_chunks[1]);
     render_controls(frame, app, chunks[1]);
+    
+    // Render Shop Overlay (Top Level - Modal) - Centered on Tank
+    if app.show_shop {
+        let area = centered_rect(60, 50, main_chunks[0]);
+        let block = Block::default()
+            .title(Span::styled(" 🛒 Pet Shop ", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)))
+            .borders(Borders::ALL)
+            .style(Style::default().bg(Color::Black));
+        
+        frame.render_widget(Clear, area); // Clear background
+        frame.render_widget(block.clone(), area);
+
+        let inner = block.inner(area);
+        
+        // Build shop items dynamically based on ownership
+        let mut shop_lines = vec![
+            Line::from(vec![Span::raw("Balance: "), Span::styled(format!("${:.2}", app.save_data.money), Style::default().fg(Color::Green))]),
+            Line::from(""),
+            Line::from(Span::styled("━━━ EQUIPMENT ━━━", Style::default().fg(Color::Cyan))),
+        ];
+        
+        // Filter
+        if app.save_data.equipment.has_filter {
+            shop_lines.push(Line::from(vec![
+                Span::styled("[1] Filter", Style::default().fg(Color::DarkGray)),
+                Span::raw(" - "),
+                Span::styled("✅ OWNED", Style::default().fg(Color::Green)),
+            ]));
+        } else {
+            shop_lines.push(Line::from(vec![
+                Span::styled("[1] Filter", Style::default().fg(Color::Cyan)),
+                Span::raw(" - $50 (Reduces water degradation)"),
+            ]));
+        }
+        
+        // Heater
+        if app.save_data.equipment.has_heater {
+            shop_lines.push(Line::from(vec![
+                Span::styled("[2] Heater", Style::default().fg(Color::DarkGray)),
+                Span::raw(" - "),
+                Span::styled("✅ OWNED", Style::default().fg(Color::Green)),
+            ]));
+        } else {
+            shop_lines.push(Line::from(vec![
+                Span::styled("[2] Heater", Style::default().fg(Color::Cyan)),
+                Span::raw(" - $40 (Stabilizes temperature)"),
+            ]));
+        }
+        
+        // Plants
+        if app.save_data.equipment.has_plants {
+            shop_lines.push(Line::from(vec![
+                Span::styled("[3] Plants", Style::default().fg(Color::DarkGray)),
+                Span::raw(" - "),
+                Span::styled("✅ OWNED", Style::default().fg(Color::Green)),
+            ]));
+        } else {
+            shop_lines.push(Line::from(vec![
+                Span::styled("[3] Plants", Style::default().fg(Color::Cyan)),
+                Span::raw(" - $30 (Improves water quality)"),
+            ]));
+        }
+        
+        shop_lines.push(Line::from(""));
+        shop_lines.push(Line::from(Span::styled("━━━ DECORATIONS ━━━", Style::default().fg(Color::Yellow))));
+        shop_lines.push(Line::from(vec![
+            Span::styled("[4] Random Decoration", Style::default().fg(Color::Yellow)),
+            Span::raw(" - $20"),
+        ]));
+        
+        shop_lines.push(Line::from(""));
+        shop_lines.push(Line::from(Span::styled("Press [1-4] to Buy | [P]/[Esc] to Close", Style::default().fg(Color::Gray))));
+        
+        let p = Paragraph::new(shop_lines)
+            .alignment(Alignment::Center)
+            .wrap(ratatui::widgets::Wrap { trim: true });
+            
+        frame.render_widget(p, inner);
+    }
+    
+    // Render Achievements Overlay
+    if app.show_achievements {
+        let area = centered_rect(70, 70, main_chunks[0]);
+        let block = Block::default()
+            .title(Span::styled(" 🏆 Achievements ", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)))
+            .borders(Borders::ALL)
+            .style(Style::default().bg(Color::Black));
+        
+        frame.render_widget(Clear, area);
+        frame.render_widget(block.clone(), area);
+        
+        let inner = block.inner(area);
+        let mut lines = vec![
+            Line::from(Span::styled("━━━ YOUR STATS ━━━", Style::default().fg(Color::Cyan))),
+            Line::from(format!("Fish Bred: {} | Money Earned: ${:.2} | Cleaned: {} | Playtime: {}h {}m", 
+                app.save_data.total_fish_bred,
+                app.save_data.total_money_earned,
+                app.save_data.clean_count,
+                (app.save_data.total_time / 3600.0) as u32,
+                ((app.save_data.total_time % 3600.0) / 60.0) as u32
+            )),
+            Line::from(""),
+            Line::from(Span::styled("━━━ ACHIEVEMENTS ━━━", Style::default().fg(Color::Yellow))),
+        ];
+        
+        for achievement in &app.save_data.achievements {
+            let status = if achievement.unlocked {
+                Span::styled("✅", Style::default().fg(Color::Green))
+            } else {
+                Span::styled("🔒", Style::default().fg(Color::DarkGray))
+            };
+            
+            let name_style = if achievement.unlocked {
+                Style::default().fg(Color::Green)
+            } else {
+                Style::default().fg(Color::DarkGray)
+            };
+            
+            lines.push(Line::from(vec![
+                status,
+                Span::raw(" "),
+                Span::raw(&achievement.icon),
+                Span::raw(" "),
+                Span::styled(&achievement.name, name_style),
+                Span::raw(" - "),
+                Span::styled(&achievement.description, Style::default().fg(Color::Gray)),
+            ]));
+        }
+        
+        lines.push(Line::from(""));
+        lines.push(Line::from(Span::styled("Press [A] to Close", Style::default().fg(Color::Gray))));
+        
+        let p = Paragraph::new(lines)
+            .alignment(Alignment::Left)
+            .wrap(ratatui::widgets::Wrap { trim: true });
+        
+        frame.render_widget(p, inner);
+    }
 }
 
 fn render_tank(frame: &mut Frame, app: &App, area: Rect) {
@@ -94,12 +233,25 @@ fn render_tank(frame: &mut Frame, app: &App, area: Rect) {
         for x in 0..tank_width {
              if y == tank_height - 1 {
                 buffer[y][x] = Span::styled(theme.substrate_char.to_string(), Style::default().fg(substrate_color));
-            } else if y == tank_height - 2 && (x < 3 || x > tank_width - 4) {
-                 buffer[y][x] = Span::styled("Y", Style::default().fg(plant_color));
-            } else if y == 0 && x % 15 == 0 && app.animation_frame % 60 < 30 && !is_night && !app.save_data.is_frozen {
-                 buffer[y][x] = Span::styled("°", Style::default().fg(bubble_color));
-            } else if app.save_data.is_frozen && y == tank_height / 2 && x == tank_width / 2 {
-                 // Nothing specifically, maybe freeze overlay logic later
+            } else {
+                // Growing corner plants (left and right)
+                let left_height = app.save_data.left_plant_height as usize;
+                let right_height = app.save_data.right_plant_height as usize;
+                
+                // Left plant growth (x < 3)
+                if x < 3 && y >= tank_height.saturating_sub(1 + left_height) && y < tank_height - 1 {
+                    buffer[y][x] = Span::styled("Y", Style::default().fg(plant_color));
+                }
+                // Right plant growth (x > width - 4)
+                else if x > tank_width - 4 && y >= tank_height.saturating_sub(1 + right_height) && y < tank_height - 1 {
+                    buffer[y][x] = Span::styled("Y", Style::default().fg(plant_color));
+                }
+                // Surface bubbles
+                else if y == 0 && x % 15 == 0 && app.animation_frame % 60 < 30 && !is_night && !app.save_data.is_frozen {
+                     buffer[y][x] = Span::styled("°", Style::default().fg(bubble_color));
+                } else if app.save_data.is_frozen && y == tank_height / 2 && x == tank_width / 2 {
+                     // Nothing specifically, maybe freeze overlay logic later
+                }
             }
         }
     }
@@ -245,6 +397,9 @@ fn render_tank(frame: &mut Frame, app: &App, area: Rect) {
         }
     }
 
+    // OLD Shop Rendering was here - Moved to render()
+
+
     // Convert buffer to Lines
     let mut lines = Vec::new();
     for row in buffer {
@@ -386,32 +541,19 @@ fn render_stats(frame: &mut Frame, app: &App, area: Rect) {
         Span::raw(format!("pH: {:.1}", water.ph)),
     ]));
 
-    // Equipment Section
-    lines.push(Line::from(""));
-    lines.push(Line::from(Span::styled("⚙️ Equipment", Style::default().fg(Color::Cyan))));
-    
-    let eq = &app.save_data.equipment;
-    let mut eq_spans = Vec::new();
-    
-    if eq.has_filter {
-        eq_spans.push(Span::styled("⚡Filter ", Style::default().fg(Color::Green)));
-    } else {
-        eq_spans.push(Span::styled("Filter ", Style::default().fg(Color::DarkGray)));
-    }
-    
-    if eq.has_heater {
-        eq_spans.push(Span::styled("🌡️Heater ", Style::default().fg(Color::Red)));
-    } else {
-        eq_spans.push(Span::styled("Heater ", Style::default().fg(Color::DarkGray)));
-    }
-    
-    if eq.has_plants {
-        eq_spans.push(Span::styled("🌿Plants", Style::default().fg(Color::Green)));
-    } else {
-        eq_spans.push(Span::styled("Plants", Style::default().fg(Color::DarkGray)));
-    }
-    
-    lines.push(Line::from(eq_spans));
+    // Money and Equipment Section
+    lines.push(Line::from("")); // Add a blank line before this section
+    lines.push(Line::from(vec![
+        Span::styled("💰 Money: ", Style::default().fg(Color::Yellow)),
+        Span::styled(format!("${:.2}", app.save_data.money), Style::default().fg(Color::White)),
+    ]));
+    lines.push(Line::from("")); // Blank line between money and equipment
+    lines.push(Line::from(Span::styled("🏗 Equipment", Style::default().fg(Color::Yellow))));
+    lines.push(Line::from(vec![
+        Span::styled("⚡Filter ", if app.save_data.equipment.has_filter { Style::default().fg(Color::Green) } else { Style::default().fg(Color::DarkGray) }),
+        Span::styled("🌡️Heater ", if app.save_data.equipment.has_heater { Style::default().fg(Color::Red) } else { Style::default().fg(Color::DarkGray) }),
+        Span::styled("🌿Plants", if app.save_data.equipment.has_plants { Style::default().fg(Color::Green) } else { Style::default().fg(Color::DarkGray) }),
+    ]));
 
     // Notifications
     if !app.notifications.is_empty() {
@@ -439,12 +581,12 @@ fn render_controls(frame: &mut Frame, app: &App, area: Rect) {
     
     let controls_text = if fish_count > 0 {
         if app.save_data.fish.len() < 10 {
-            format!("v0.9.4 [F]eed [N]ew [W]ater [E]quip [S]crub [T]heme [D]ecorate [X]Remove {}", freeze_text)
+            format!("v0.9.5 [F]eed [N]ew [W]ater [S]crub [P]Shop [X]Remove {}", freeze_text)
         } else {
-            format!("v0.9.4 [F]eed [W]ater [E]quip [S]crub [T]heme [D]ecorate [X]Remove {}", freeze_text)
+            format!("v0.9.5 [F]eed [W]ater [S]crub [P]Shop [X]Remove {}", freeze_text)
         }
     } else {
-        format!("v0.9.4 [N]ew [D]ecorate [X]Remove [R]estart [Q]uit {}", freeze_text)
+        format!("v0.9.5 [N]ew [P]Shop [X]Remove [R]estart [Q]uit {}", freeze_text)
     };
 
     let block = Block::default()
@@ -458,4 +600,24 @@ fn render_controls(frame: &mut Frame, app: &App, area: Rect) {
         .style(Style::default().fg(Color::White));
 
     frame.render_widget(controls, inner);
+}
+
+fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
+    let popup_layout = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Percentage((100 - percent_y) / 2),
+            Constraint::Percentage(percent_y),
+            Constraint::Percentage((100 - percent_y) / 2),
+        ])
+        .split(r);
+
+    Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Percentage((100 - percent_x) / 2),
+            Constraint::Percentage(percent_x),
+            Constraint::Percentage((100 - percent_x) / 2),
+        ])
+        .split(popup_layout[1])[1]
 }

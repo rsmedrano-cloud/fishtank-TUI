@@ -20,6 +20,10 @@ pub struct App {
     pub selected_species: usize,  // For cycling through species
     pub start_time: chrono::DateTime<Utc>,  // For day/night cycle calculation
     pub particles: Vec<Particle>,
+    pub show_shop: bool,
+    pub show_achievements: bool,
+    pub event_timer: f64, // For random events
+    pub lucky_day_timer: f32, // For 2x income event
 }
 
 pub struct Particle {
@@ -103,6 +107,10 @@ impl App {
             selected_species: 0,
             start_time,
             particles: Vec::new(),
+            show_shop: false,
+            show_achievements: false,
+            event_timer: 0.0,
+            lucky_day_timer: 0.0,
         })
     }
 
@@ -149,6 +157,61 @@ impl App {
         
         self.save_data.water.temperature += temp_diff * (0.5 * hours as f32);
 
+        // Algae Growth & Passive Income
+        let dt = delta_seconds as f32; // Use real-time delta for these systems
+        
+        // Algae Growth: Base 0.02 per second (slower, more manageable)
+        let purity_factor = 1.0 + (1.0 - self.save_data.water.purity.clamp(0.0, 1.0)) * 2.0;
+        let growth_amount = 0.02 * purity_factor * dt;
+        self.save_data.algae_level = (self.save_data.algae_level + growth_amount).min(100.0);
+
+        // Passive Income: $0.05 per happy fish per second (~$3/min for 10 fish)
+        let happy_fish = self.save_data.fish.iter().filter(|f| f.alive && f.happiness > 80.0).count();
+        if happy_fish > 0 {
+            self.save_data.money += 0.05 * happy_fish as f32 * dt;
+        }
+        
+        // Corner Plant Growth: Slow, aesthetic feature
+        // Base: 1 level every ~120 seconds, faster with Plants equipment
+        let plant_growth_rate = if self.save_data.equipment.has_plants { 
+            0.01 // ~100 sec per level with plants
+        } else { 
+            0.008 // ~125 sec per level without
+        };
+        
+        // Grow left plant (max 8 high)
+        if self.save_data.left_plant_height < 8 && rand::random::<f32>() < plant_growth_rate * dt {
+            self.save_data.left_plant_height += 1;
+        }
+        
+        // Grow right plant (max 8 high)
+        if self.save_data.right_plant_height < 8 && rand::random::<f32>() < plant_growth_rate * dt {
+            self.save_data.right_plant_height += 1;
+        }
+        
+        // Random Events System (~1% chance per minute = ~1 event per 100 min)
+        self.event_timer += delta_seconds;
+        if self.event_timer >= 60.0 { // Check every minute
+            self.event_timer = 0.0;
+            if rand::random::<f32>() < 0.01 { // 1% chance
+                self.trigger_random_event();
+            }
+        }
+        
+        // Lucky Day event: 2x income multiplier
+        if self.lucky_day_timer > 0.0 {
+            self.lucky_day_timer -= dt;
+        }
+        
+        // Passive Income (with Lucky Day multiplier)
+        let income_mult = if self.lucky_day_timer > 0.0 { 2.0 } else { 1.0 };
+        let happy_fish = self.save_data.fish.iter().filter(|f| f.alive && f.happiness > 80.0).count();
+        if happy_fish > 0 {
+            let income = 0.05 * happy_fish as f32 * dt * income_mult;
+            self.save_data.money += income;
+            self.save_data.total_money_earned += income;
+        }
+
         // Update all fish
         let mut new_fry = Vec::new();
 
@@ -181,7 +244,9 @@ impl App {
              if self.save_data.fish.len() < 10 {
                  fry.name = format!("Baby {}", self.save_data.fish.len() + 1);
                  self.save_data.fish.push(fry);
+                 self.save_data.total_fish_bred += 1;
                  self.add_notification("💕 Love is in the water! A baby is born!".to_string());
+                 self.check_achievements(); // Check for First Fry achievement
              }
         }
 
@@ -220,10 +285,87 @@ impl App {
     }
 
     pub fn handle_key(&mut self, key: KeyEvent) {
+        if self.show_shop {
+            match key.code {
+                KeyCode::Char('p') | KeyCode::Esc => self.show_shop = false,
+                KeyCode::Char('1') => { // Filter ($50)
+                    if !self.save_data.equipment.has_filter {
+                        if self.save_data.money >= 50.0 {
+                            self.save_data.money -= 50.0;
+                            self.save_data.equipment.has_filter = true;
+                            self.add_notification("⚡ Bought Filter! Water  stays cleaner.".to_string());
+                            self.check_achievements();
+                        } else {
+                            self.add_notification("💸 Not enough money! Need $50.".to_string());
+                        }
+                    } else {
+                        self.add_notification("✅ Already own Filter!".to_string());
+                    }
+                }
+                KeyCode::Char('2') => { // Heater ($40)
+                    if !self.save_data.equipment.has_heater {
+                        if self.save_data.money >= 40.0 {
+                            self.save_data.money -= 40.0;
+                            self.save_data.equipment.has_heater = true;
+                            self.add_notification("🌡️ Bought Heater! Temperature stable.".to_string());
+                            self.check_achievements();
+                        } else {
+                            self.add_notification("💸 Not enough money! Need $40.".to_string());
+                        }
+                    } else {
+                        self.add_notification("✅ Already own Heater!".to_string());
+                    }
+                }
+                KeyCode::Char('3') => { // Plants ($30)
+                    if !self.save_data.equipment.has_plants {
+                        if self.save_data.money >= 30.0 {
+                            self.save_data.money -= 30.0;
+                            self.save_data.equipment.has_plants = true;
+                            self.add_notification("🌿 Bought Live Plants! Better water.".to_string());
+                            self.check_achievements();
+                        } else {
+                            self.add_notification("💸 Not enough money! Need $30.".to_string());
+                        }
+                    } else {
+                        self.add_notification("✅ Already own Plants!".to_string());
+                    }
+                }
+                KeyCode::Char('4') => { // Decoration ($20)
+                    if self.save_data.money >= 20.0 {
+                         self.save_data.money -= 20.0;
+                         // Add random decoration
+                        let types = [crate::models::DecorationType::Rock, crate::models::DecorationType::Plant, crate::models::DecorationType::Castle, crate::models::DecorationType::Skull];
+                        let mut placed = false;
+                        for _ in 0..10 {
+                            let rand_type = types[rand::random::<usize>() % types.len()];
+                            let x = rand::random::<f32>().clamp(0.1, 0.9);
+                            let overlap = self.save_data.decorations.iter().any(|d| (d.position.0 - x).abs() < 0.15);
+                            if !overlap {
+                                self.save_data.decorations.push(crate::models::Decoration::new(rand_type, (x, 0.0)));
+                                placed = true;
+                                break;
+                            }
+                        }
+                        if placed {
+                             self.add_notification("🏰 Bought a decoration!".to_string());
+                        } else {
+                             self.save_data.money += 20.0; // Refund
+                             self.add_notification("❌ No space! Refunded.".to_string());
+                        }
+                    } else {
+                        self.add_notification("💸 Not enough money! Need $20.".to_string());
+                    }
+                }
+                _ => {}
+            }
+            return;
+        }
+
         match key.code {
-            KeyCode::Char('q') | KeyCode::Esc => {
+            KeyCode::Char('q') => {
                 self.state = AppState::Quit;
             }
+            KeyCode::Char('p') => self.show_shop = true,
             KeyCode::Char('f') => {
                 self.feed_fish();
             }
@@ -249,42 +391,26 @@ impl App {
                 self.toggle_theme();
             }
             KeyCode::Char('d') => {
-                // Add a random decoration
-                let types = [crate::models::DecorationType::Rock, crate::models::DecorationType::Plant, crate::models::DecorationType::Castle, crate::models::DecorationType::Skull];
-                
-                // Try to find a non-overlapping spot (Max 10 attempts)
-                let mut placed = false;
-                for _ in 0..10 {
-                    let rand_type = types[rand::random::<usize>() % types.len()];
-                    
-                     // Random X, centered somewhat (0.1 to 0.9)
-                    let x = rand::random::<f32>().clamp(0.1, 0.9);
-                    
-                    // Check overlap with existing decorations
-                    // Heuristic: Assume width ~ 15% (0.15)
-                    let width_allowance = 0.15;
-                    let overlap = self.save_data.decorations.iter().any(|d| (d.position.0 - x).abs() < width_allowance);
-                    
-                    if !overlap {
-                        let deco = crate::models::Decoration::new(rand_type, (x, 0.0));
-                        self.save_data.decorations.push(deco);
-                        self.add_notification(format!("🌿 Added new decoration!"));
-                        placed = true;
-                        break;
-                    }
-                }
-                
-                if !placed {
-                    self.add_notification("❌ Not enough space for decoration!".to_string());
-                }
+                self.add_notification("Use [P] to buy decorations now!".to_string());
             }
             KeyCode::Char('s') | KeyCode::Char('S') => {
-                 if self.save_data.algae_level > 0.0 {
+                 if self.save_data.algae_level > 1.0 {
+                     let difficulty_multiplier = self.save_data.algae_level / 100.0;
+                     let payout = 0.50 + (2.0 * difficulty_multiplier);
+                     
                      self.save_data.algae_level = (self.save_data.algae_level - 20.0).max(0.0);
-                     self.add_notification("🧽 Scrubbed the glass!".to_string());
+                     self.save_data.money += payout;
+                     self.save_data.total_money_earned += payout;
+                     self.save_data.clean_count += 1;
+                     
+                     self.add_notification(format!("🧽 Scrubbed! Earned ${:.2}", payout));
+                     self.check_achievements(); // Check clean_100
                  } else {
-                     self.add_notification("✨ Glass is already sparkling clean!".to_string());
+                     self.add_notification("✨ Glass is clean! Wait for algae to grow to earn $.".to_string());
                  }
+            }
+            KeyCode::Char('a') | KeyCode::Char('A') => {
+                self.show_achievements = !self.show_achievements;
             }
             KeyCode::Char('x') => {
                 self.save_data.decorations.pop(); // Remove last one
@@ -322,10 +448,16 @@ impl App {
     pub fn new_fish(&mut self) {
         const MAX_FISH: usize = 10;
         
-        if self.save_data.fish.len() >= MAX_FISH {
+        // Count only alive fish
+        let alive_count = self.save_data.fish.iter().filter(|f| f.alive).count();
+        
+        if alive_count >= MAX_FISH {
             self.add_notification(format!("⚠️  Tank full! Maximum {} fish.", MAX_FISH));
             return;
         }
+        
+        // If there are dead fish, remove them first to make room
+        self.save_data.fish.retain(|f| f.alive);
 
         // Rotate species (0..7)
         self.selected_species = (self.selected_species + 1) % 8;
@@ -426,6 +558,115 @@ impl App {
         let themes = crate::ui::theme::ThemeManager::get_themes();
         self.save_data.theme_index = (self.save_data.theme_index + 1) % themes.len();
         self.add_notification(format!("🎨 Theme: {}", themes[self.save_data.theme_index].name));
+    }
+    
+    fn trigger_random_event(&mut self) {
+        let events = ["mystery_delivery", "lucky_day", "surprise_fry", "algae_eater", "power_surge", "disease", "cloudy_water"];
+        let event = events[rand::random::<usize>() % events.len()];
+        
+        match event {
+            "mystery_delivery" => {
+                let types = [crate::models::DecorationType::Rock, crate::models::DecorationType::Plant, 
+                             crate::models::DecorationType::Castle, crate::models::DecorationType::Skull];
+                let rand_type = types[rand::random::<usize>() % types.len()];
+                let x = rand::random::<f32>().clamp(0.1, 0.9);
+                if self.save_data.decorations.iter().all(|d| (d.position.0 - x).abs() >= 0.15) {
+                    self.save_data.decorations.push(crate::models::Decoration::new(rand_type, (x, 0.0)));
+                    self.add_notification("🎁 Mystery Delivery! Free decoration!".to_string());
+                }
+            }
+            "lucky_day" => {
+                self.lucky_day_timer = 120.0;
+                self.add_notification("⭐ Lucky Day! 2x income for 2 min!".to_string());
+            }
+            "surprise_fry" => {
+                if self.save_data.fish.iter().filter(|f| f.alive).count() < 10 {
+                    let species_id = rand::random::<usize>() % 8;
+                    let name = format!("Surprise {}", self.save_data.fish.len() + 1);
+                    let mut new_fish = match species_id {
+                        0 => crate::models::Fish::new_goldfish(name),
+                        1 => crate::models::Fish::new_betta(name),
+                        2 => crate::models::Fish::new_guppy(name),
+                        3 => crate::models::Fish::new_neon_tetra(name),
+                        4 => crate::models::Fish::new_angelfish(name),
+                        5 => crate::models::Fish::new_clownfish(name),
+                        6 => crate::models::Fish::new_koi(name),
+                        _ => crate::models::Fish::new_pufferfish(name),
+                    };
+                    // Set as baby fish
+                    new_fish.stage = crate::models::GrowthStage::Fry;
+                    new_fish.position = (0.5, 0.5);
+                    self.save_data.fish.push(new_fish);
+                    self.add_notification("🐣 Surprise Fry appeared!".to_string());
+                }
+            }
+            "algae_eater" => {
+                self.save_data.algae_level *= 0.5;
+                self.add_notification("🐌 Algae Eater visited! -50% algae!".to_string());
+            }
+            "power_surge" => {
+                let mut broken = vec![];
+                if self.save_data.equipment.has_filter { broken.push("filter"); }
+                if self.save_data.equipment.has_heater { broken.push("heater"); }
+                if self.save_data.equipment.has_plants { broken.push("plants"); }
+                
+                if !broken.is_empty() {
+                    match broken[rand::random::<usize>() % broken.len()] {
+                        "filter" => { self.save_data.equipment.has_filter = false; self.add_notification("⚡ Power Surge! Filter broken!".to_string()); }
+                        "heater" => { self.save_data.equipment.has_heater = false; self.add_notification("⚡ Power Surge! Heater broken!".to_string()); }
+                        "plants" => { self.save_data.equipment.has_plants = false; self.add_notification("⚡ Power Surge! Plants died!".to_string()); }
+                        _ => {}
+                    }
+                }
+            }
+            "disease" => {
+                for fish in &mut self.save_data.fish {
+                    if fish.alive { fish.health = (fish.health - 20.0).max(1.0); }
+                }
+                self.add_notification("🦠 Disease outbreak! -20 health!".to_string());
+            }
+            "cloudy_water" => {
+                self.save_data.water.purity = (self.save_data.water.purity - 30.0).max(0.0);
+                self.add_notification("☁️ Cloudy water! -30 purity!".to_string());
+            }
+            _ => {}
+        }
+    }
+    
+    fn check_achievements(&mut self) {
+        let mut unlocked = Vec::new();
+        
+        for achievement in &mut self.save_data.achievements {
+            if achievement.unlocked { continue; }
+            
+            let should_unlock = match achievement.id.as_str() {
+                "first_fry" => self.save_data.total_fish_bred > 0,
+                "money_100" => self.save_data.total_money_earned >= 100.0,
+                "money_500" => self.save_data.total_money_earned >= 500.0,
+                "money_1000" => self.save_data.total_money_earned >= 1000.0,
+                "fish_10" => self.save_data.total_fish_bred >= 10,
+                "fish_25" => self.save_data.total_fish_bred >= 25,
+                "fish_50" => self.save_data.total_fish_bred >= 50,
+                "clean_100" => self.save_data.clean_count >= 100,
+                "deco_10" => self.save_data.decorations.len() >= 10,
+                "time_24h" => self.save_data.total_time >= 86400.0, // 24h in seconds
+                "time_48h" => self.save_data.total_time >= 172800.0, // 48h
+                "all_equipment" => self.save_data.equipment.has_filter && 
+                                   self.save_data.equipment.has_heater && 
+                                   self.save_data.equipment.has_plants,
+                "max_plants" => self.save_data.left_plant_height == 8 && self.save_data.right_plant_height == 8,
+                _ => false,
+            };
+            
+            if should_unlock {
+                achievement.unlocked = true;
+                unlocked.push(format!("🏆 Achievement: {}", achievement.name));
+            }
+        }
+        
+        for msg in unlocked {
+            self.add_notification(msg);
+        }
     }
 
     pub fn get_current_theme(&self) -> crate::ui::theme::Theme {

@@ -52,6 +52,12 @@ pub struct SaveData {
     pub decorations: Vec<crate::models::Decoration>,
     #[serde(default)]
     pub algae_level: f32, // 0.0 to 100.0
+    #[serde(default = "default_money")]
+    pub money: f32,
+    #[serde(default)]
+    pub left_plant_height: u8, // 0-8 (number of Y's growing up)
+    #[serde(default)]
+    pub right_plant_height: u8, // 0-8
     pub player_name: String,
     #[serde(default)]
     pub water: WaterParams,
@@ -63,6 +69,18 @@ pub struct SaveData {
     pub is_frozen: bool,
     #[serde(default)] // Toggle for theme selection
     pub theme_index: usize,
+    #[serde(default)] // Achievement tracking
+    pub achievements: Vec<crate::models::Achievement>,
+    #[serde(default)] // Stats tracking
+    pub total_fish_bred: u32,
+    #[serde(default)]
+    pub total_money_earned: f32,
+    #[serde(default)]
+    pub clean_count: u32,
+}
+
+fn default_money() -> f32 {
+    50.0
 }
 
 impl Default for SaveData {
@@ -73,12 +91,19 @@ impl Default for SaveData {
             fish: Vec::new(),
             decorations: Vec::new(),
             algae_level: 0.0,
+            money: 50.0,
+            left_plant_height: 1, // Start with 1 Y at bottom
+            right_plant_height: 1,
             player_name: "Player".to_string(),
             water: WaterParams::default(),
             total_time: 0.0,
             equipment: Equipment::default(),
             is_frozen: false,
             theme_index: 0,
+            achievements: crate::models::create_achievements(),
+            total_fish_bred: 0,
+            total_money_earned: 0.0,
+            clean_count: 0,
         }
     }
 }
