@@ -4,6 +4,9 @@ A retro-styled terminal user interface (TUI) aquarium simulator built in Rust. Y
 
 ![Version](https://img.shields.io/badge/version-0.11.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
+![GitHub Downloads](https://img.shields.io/github/downloads/rsmedrano-cloud/fishtank-TUI/total?label=downloads)
+![GitHub Repo Size](https://img.shields.io/github/repo-size/rsmedrano-cloud/fishtank-TUI)
+![Visitors](https://visitor-badge.laobi.icu/badge?page_id=rsmedrano-cloud.fishtank-TUI)
 
 ![Fishtank Gameplay](Screenshots/swappy-20260217-180123.png)
 
@@ -83,7 +86,7 @@ A retro-styled terminal user interface (TUI) aquarium simulator built in Rust. Y
 ### Quick Install
 
 ```bash
-git clone https://github.com/yourusername/fishtank-TUI.git
+git clone https://github.com/rsmedrano-cloud/fishtank-TUI.git
 cd fishtank-TUI
 ./install.sh
 ```
