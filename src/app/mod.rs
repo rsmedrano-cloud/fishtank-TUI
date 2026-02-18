@@ -388,7 +388,7 @@ impl App {
                 KeyCode::Right => {
                     self.feeding_game.cursor_x = (self.feeding_game.cursor_x + 0.05).min(0.95);
                 }
-                KeyCode::Esc | KeyCode::Char('g') => {
+                KeyCode::Esc | KeyCode::Char('g') | KeyCode::Char('G') => {
                     self.show_minigame = false;
                     self.add_notification("🎮 Mini-game cancelled.".to_string());
                 }
@@ -477,32 +477,32 @@ impl App {
             KeyCode::Char('q') => {
                 self.state = AppState::Quit;
             }
-            KeyCode::Char('p') => self.show_shop = true,
-            KeyCode::Char('f') => {
+            KeyCode::Char('p') | KeyCode::Char('P') => self.show_shop = true,
+            KeyCode::Char('f') | KeyCode::Char('F') => {
                 self.feed_fish();
             }
-            KeyCode::Char('n') => {
+            KeyCode::Char('n') | KeyCode::Char('N') => {
                 self.new_fish();
             }
-            KeyCode::Char('c') => {
+            KeyCode::Char('c') | KeyCode::Char('C') => {
                 self.clear_notifications();
             }
-            KeyCode::Char('r') => {
+            KeyCode::Char('r') | KeyCode::Char('R') => {
                 self.restart_tank();
             }
-            KeyCode::Char('w') => {
+            KeyCode::Char('w') | KeyCode::Char('W') => {
                 self.clean_tank();
             }
-            KeyCode::Char('e') => {
+            KeyCode::Char('e') | KeyCode::Char('E') => {
                 self.toggle_equipment();
             }
-            KeyCode::Char('z') => {
+            KeyCode::Char('z') | KeyCode::Char('Z') => {
                 self.toggle_freeze();
             }
-            KeyCode::Char('t') => {
+            KeyCode::Char('t') | KeyCode::Char('T') => {
                 self.toggle_theme();
             }
-            KeyCode::Char('d') => {
+            KeyCode::Char('d') | KeyCode::Char('D') => {
                 self.add_notification("Use [P] to buy decorations now!".to_string());
             }
             KeyCode::Char('s') | KeyCode::Char('S') => {

@@ -1,0 +1,32 @@
+# Maintainer: Fishtank Contributors <rsmedranojobs@gmail.com>
+pkgname=fishtank-tui
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="Retro-styled TUI aquarium simulator"
+arch=('x86_64')
+url="https://github.com/rsmedrano-cloud/fishtank-TUI"
+license=('MIT')
+depends=('gcc-libs')
+makedepends=('cargo')
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('SKIP') # User will need to update this with 'updpkgsums'
+
+prepare() {
+  cd "$srcdir/fishtank-TUI-$pkgver"
+  export RUSTUP_TOOLCHAIN=stable
+  cargo fetch --locked --target "$CARCH-unknown-linux-gnu"
+}
+
+build() {
+  cd "$srcdir/fishtank-TUI-$pkgver"
+  export RUSTUP_TOOLCHAIN=stable
+  export CARGO_TARGET_DIR=target
+  cargo build --frozen --release --all-features
+}
+
+package() {
+  cd "$srcdir/fishtank-TUI-$pkgver"
+  install -Dm755 target/release/fishtank "$pkgdir/usr/bin/fishtank"
+  install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

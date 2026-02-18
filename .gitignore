@@ -23,3 +23,11 @@ Thumbs.db
 # Local Release Workflow
 Dockerfile.build
 release_workflow.sh
+
+# Packaging
+*.deb
+*.pkg.tar.zst
+packaging/build/
+src_pkg/
+pkg/
+

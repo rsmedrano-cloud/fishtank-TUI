@@ -1,0 +1,5 @@
+#!/bin/sh
+set -e
+# Set permissions if needed
+chmod 755 /usr/bin/fishtank
+exit 0

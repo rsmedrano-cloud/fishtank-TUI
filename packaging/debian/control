@@ -1,0 +1,9 @@
+Package: fishtank
+Version: 1.0.0
+Section: games
+Priority: optional
+Architecture: amd64
+Maintainer: Fishtank Contributors <rsmedranojobs@gmail.com>
+Description: Retro-styled TUI aquarium simulator
+ Fishtank is a terminal-based aquarium simulator with multiple fish species,
+ a feeding mini-game, and offline progression.

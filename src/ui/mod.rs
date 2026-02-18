@@ -29,7 +29,7 @@ pub fn render(frame: &mut Frame, app: &App) {
         .direction(Direction::Horizontal)
         .constraints([
             Constraint::Percentage(80),  // Tank view
-            Constraint::Percentage(20),  // Stats panel
+            Constraint::Min(25),  // Stats panel (fixed width to prevent cutoff)
         ])
         .split(chunks[0]);
 
