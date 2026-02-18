@@ -1,11 +1,11 @@
 [package]
 name = "fishtank"
-version = "0.11.0"
+version = "1.0.0"
 edition = "2021"
 authors = ["Fishtank Contributors"]
 description = "A retro-styled TUI aquarium simulator - Tamagotchi for your terminal"
 license = "MIT"
-repository = "https://github.com/yourusername/fishtank-TUI"
+repository = "https://github.com/rsmedrano-cloud/fishtank-TUI"
 keywords = ["tui", "terminal", "game", "aquarium", "tamagotchi"]
 categories = ["games", "command-line-utilities"]
 

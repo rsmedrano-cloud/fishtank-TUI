@@ -2,7 +2,7 @@
 
 A retro-styled terminal user interface (TUI) aquarium simulator built in Rust. Your very own Tamagotchi-style fish that lives in your terminal!
 
-![Version](https://img.shields.io/badge/version-0.11.0-blue)
+![Version](https://img.shields.io/badge/version-1.0.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![GitHub Downloads](https://img.shields.io/github/downloads/rsmedrano-cloud/fishtank-TUI/total?label=downloads)
 ![GitHub Repo Size](https://img.shields.io/github/repo-size/rsmedrano-cloud/fishtank-TUI)
@@ -12,7 +12,7 @@ A retro-styled terminal user interface (TUI) aquarium simulator built in Rust. Y
 
 ## ✨ Features
 
-- 🐠 **8 Unique Fish Species** - Goldfish, Betta, Guppy, Neon Tetra, Angelfish, Clownfish, Koi, Pufferfish!
+- 🐠 **15 Unique Fish Species** - Goldfish, Betta, Guppy, Neon Tetra, Angelfish, Clownfish, Koi, Pufferfish, Seahorse, Swordfish, Discus, Piranha, Jellyfish, Tang, Catfish!
 - 🏰 **Decorations** - Customize your tank with high-quality ASCII Castles, Plants, and Rocks.
 - 🫧 **Particle Effects** - Dynamic bubble streams and floating particles.
 - ��🌙 **Day/Night Cycle** - Tank dims at night, fish sleep (1 real sec = 3 game sec).
@@ -50,7 +50,7 @@ A retro-styled terminal user interface (TUI) aquarium simulator built in Rust. Y
 
 | Key | Action |
 |-----|--------|
-| `N` | **New Fish** (Cycle species 0-7) |
+| `N` | **New Fish** (Cycle species 0-14) |
 | `F` | **Feed** all fish |
 | `S` | **Scrub Algae** (Earn money!) |
 | `W` | **Water Change** (Clean tank) |
@@ -60,6 +60,7 @@ A retro-styled terminal user interface (TUI) aquarium simulator built in Rust. Y
 | `X` | **Remove Decoration** (Undo last) |
 | `T` | **Theme** Switcher |
 | `Z` | **Freeze/Unfreeze** (Pause game) |
+| `G` | **Feeding Game** (Mini-game for rewards!) |
 | `R` | **Restart** (Wipe save) |
 | `Q` | **Quit** (Auto-save) |
 
@@ -75,6 +76,13 @@ A retro-styled terminal user interface (TUI) aquarium simulator built in Rust. Y
 | 🟠 **Clownfish** | `>||>` | Striped, likes anemones. |
 | 🎏 **Koi** | `>==>` | Large, long-lived. |
 | 🐡 **Pufferfish** | `(o)>` | Spiky & round! |
+| 🌊 **Seahorse** | `}S>` | Slow, vertical movement. |
+| ⚔️ **Swordfish** | `>===>` | Fastest swimmer! |
+| 🔵 **Discus** | `>(O)` | Slow and elegant. |
+| 🦷 **Piranha** | `>V>` | Aggressive, hungry fast. |
+| 🪼 **Jellyfish** | `(~)` | Floaty drifter with tentacles. |
+| 💙 **Tang** | `><|>` | Colorful and active. |
+| 🐱 **Catfish** | `>==>` | Bottom dweller, stays low. |
 
 ## � Installation
 

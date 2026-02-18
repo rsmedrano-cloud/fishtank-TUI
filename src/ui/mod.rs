@@ -174,6 +174,72 @@ pub fn render(frame: &mut Frame, app: &App) {
         
         frame.render_widget(p, inner);
     }
+
+    // Render Feeding Mini-Game Overlay
+    if app.show_minigame {
+        let area = centered_rect(50, 60, main_chunks[0]);
+        let block = Block::default()
+            .title(Span::styled(" 🎮 Feeding Game ", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)))
+            .borders(Borders::ALL)
+            .style(Style::default().bg(Color::Black));
+        
+        frame.render_widget(Clear, area);
+        frame.render_widget(block.clone(), area);
+        
+        let inner = block.inner(area);
+        let game_width = inner.width as usize;
+        let game_height = inner.height as usize;
+        
+        if game_height > 4 && game_width > 4 {
+            let mut game_lines: Vec<Line> = Vec::new();
+            
+            // Header: score and round
+            game_lines.push(Line::from(vec![
+                Span::styled(format!("  Score: {} ", app.feeding_game.score), Style::default().fg(Color::Green)),
+                Span::raw("  "),
+                Span::styled(format!("Round: {}/{}", app.feeding_game.round + 1, app.feeding_game.max_rounds), Style::default().fg(Color::Yellow)),
+            ]));
+            game_lines.push(Line::from(""));
+            
+            // Game field: render food falling and cursor
+            let field_height = game_height.saturating_sub(5); // Reserve lines for header/footer
+            let food_row = (app.feeding_game.food_y * field_height as f32).round() as usize;
+            let food_col = (app.feeding_game.food_x * (game_width - 2) as f32).round() as usize;
+            let cursor_col = (app.feeding_game.cursor_x * (game_width - 2) as f32).round() as usize;
+            
+            for row in 0..field_height {
+                let mut spans = Vec::new();
+                
+                if row == food_row.min(field_height - 1) {
+                    // Draw the food pellet
+                    let before = " ".repeat(food_col.min(game_width - 2));
+                    spans.push(Span::raw(before));
+                    spans.push(Span::styled("●", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)));
+                } else if row == field_height - 1 {
+                    // Draw the cursor/catcher at the bottom
+                    let catcher = "[  ^  ]";
+                    let catcher_start = cursor_col.saturating_sub(3).min(game_width.saturating_sub(catcher.len() + 1));
+                    let before = " ".repeat(catcher_start);
+                    spans.push(Span::raw(before));
+                    spans.push(Span::styled(catcher, Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)));
+                } else {
+                    spans.push(Span::raw(" "));
+                }
+                
+                game_lines.push(Line::from(spans));
+            }
+            
+            // Footer
+            game_lines.push(Line::from(""));
+            game_lines.push(Line::from(Span::styled(
+                "  ←→ Move | G/Esc Quit",
+                Style::default().fg(Color::Gray),
+            )));
+            
+            let p = Paragraph::new(game_lines);
+            frame.render_widget(p, inner);
+        }
+    }
 }
 
 fn render_tank(frame: &mut Frame, app: &App, area: Rect) {
@@ -581,12 +647,12 @@ fn render_controls(frame: &mut Frame, app: &App, area: Rect) {
     
     let controls_text = if fish_count > 0 {
         if app.save_data.fish.len() < 10 {
-            format!("v0.9.5 [F]eed [N]ew [W]ater [S]crub [P]Shop [X]Remove {}", freeze_text)
+            format!("v1.0.0 [F]eed [N]ew [W]ater [S]crub [P]Shop [G]ame [X]Remove {}", freeze_text)
         } else {
-            format!("v0.9.5 [F]eed [W]ater [S]crub [P]Shop [X]Remove {}", freeze_text)
+            format!("v1.0.0 [F]eed [W]ater [S]crub [P]Shop [G]ame [X]Remove {}", freeze_text)
         }
     } else {
-        format!("v0.9.5 [N]ew [P]Shop [X]Remove [R]estart [Q]uit {}", freeze_text)
+        format!("v1.0.0 [N]ew [P]Shop [X]Remove [R]estart [Q]uit {}", freeze_text)
     };
 
     let block = Block::default()

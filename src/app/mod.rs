@@ -24,6 +24,20 @@ pub struct App {
     pub show_achievements: bool,
     pub event_timer: f64, // For random events
     pub lucky_day_timer: f32, // For 2x income event
+    pub show_minigame: bool,
+    pub feeding_game: FeedingGame,
+}
+
+pub struct FeedingGame {
+    pub food_x: f32,      // 0.0-1.0 horizontal position of falling food
+    pub food_y: f32,      // 0.0-1.0 vertical position (0=top, 1=bottom)
+    pub cursor_x: f32,    // Player cursor position at bottom
+    pub score: u32,       // Catches this round
+    pub misses: u32,      // Misses this round
+    pub timer: f32,       // Seconds remaining
+    pub food_speed: f32,  // How fast food falls
+    pub round: u32,       // Foods dropped so far
+    pub max_rounds: u32,  // Total foods to drop
 }
 
 pub struct Particle {
@@ -43,6 +57,33 @@ impl Particle {
             symbol,
             lifetime: 1.0, // 0.0 - 1.0 (fade out?) or just time based
         }
+    }
+}
+
+impl FeedingGame {
+    pub fn new() -> Self {
+        Self {
+            food_x: 0.5,
+            food_y: 0.0,
+            cursor_x: 0.5,
+            score: 0,
+            misses: 0,
+            timer: 30.0,
+            food_speed: 0.4,
+            round: 0,
+            max_rounds: 10,
+        }
+    }
+
+    pub fn reset(&mut self) {
+        self.food_x = 0.1 + rand::random::<f32>() * 0.8;
+        self.food_y = 0.0;
+        self.cursor_x = 0.5;
+        self.score = 0;
+        self.misses = 0;
+        self.timer = 30.0;
+        self.food_speed = 0.4;
+        self.round = 0;
     }
 }
 
@@ -111,6 +152,8 @@ impl App {
             show_achievements: false,
             event_timer: 0.0,
             lucky_day_timer: 0.0,
+            show_minigame: false,
+            feeding_game: FeedingGame::new(),
         })
     }
 
@@ -282,9 +325,78 @@ impl App {
             let _ = self.save_data.save();
             self.auto_save_timer = 0.0;
         }
+
+        // Update mini-game if active
+        if self.show_minigame {
+            self.feeding_game.food_y += self.feeding_game.food_speed * delta_seconds as f32;
+            
+            // Food reached the bottom — check if caught
+            if self.feeding_game.food_y >= 1.0 {
+                let distance = (self.feeding_game.food_x - self.feeding_game.cursor_x).abs();
+                if distance < 0.08 {
+                    // Caught!
+                    self.feeding_game.score += 1;
+                    self.add_notification(format!("🎯 Catch! Score: {}", self.feeding_game.score));
+                } else {
+                    self.feeding_game.misses += 1;
+                }
+                
+                self.feeding_game.round += 1;
+                
+                // Check if game over
+                if self.feeding_game.round >= self.feeding_game.max_rounds {
+                    // Game over — award prizes
+                    let money = self.feeding_game.score as f32 * 0.50;
+                    self.save_data.money += money;
+                    self.save_data.total_money_earned += money;
+                    
+                    // Feed fish proportionally to score
+                    if self.feeding_game.score > 0 {
+                        let feed_amount = (self.feeding_game.score as f32 / self.feeding_game.max_rounds as f32) * 30.0;
+                        for fish in &mut self.save_data.fish {
+                            if fish.alive {
+                                fish.hunger = (fish.hunger + feed_amount).min(100.0);
+                                fish.happiness = (fish.happiness + 5.0).min(100.0);
+                            }
+                        }
+                    }
+                    
+                    self.add_notification(format!(
+                        "🎮 Game Over! {}/{} caught! Earned ${:.2}",
+                        self.feeding_game.score, self.feeding_game.max_rounds, money
+                    ));
+                    self.show_minigame = false;
+                    self.check_achievements();
+                } else {
+                    // Spawn next food pellet
+                    self.feeding_game.food_x = 0.1 + rand::random::<f32>() * 0.8;
+                    self.feeding_game.food_y = 0.0;
+                    // Slightly increase speed each round
+                    self.feeding_game.food_speed += 0.02;
+                }
+            }
+        }
     }
 
     pub fn handle_key(&mut self, key: KeyEvent) {
+        // Mini-game mode: intercept keys
+        if self.show_minigame {
+            match key.code {
+                KeyCode::Left => {
+                    self.feeding_game.cursor_x = (self.feeding_game.cursor_x - 0.05).max(0.05);
+                }
+                KeyCode::Right => {
+                    self.feeding_game.cursor_x = (self.feeding_game.cursor_x + 0.05).min(0.95);
+                }
+                KeyCode::Esc | KeyCode::Char('g') => {
+                    self.show_minigame = false;
+                    self.add_notification("🎮 Mini-game cancelled.".to_string());
+                }
+                _ => {}
+            }
+            return;
+        }
+
         if self.show_shop {
             match key.code {
                 KeyCode::Char('p') | KeyCode::Esc => self.show_shop = false,
@@ -412,6 +524,15 @@ impl App {
             KeyCode::Char('a') | KeyCode::Char('A') => {
                 self.show_achievements = !self.show_achievements;
             }
+            KeyCode::Char('g') | KeyCode::Char('G') => {
+                if self.save_data.fish.iter().any(|f| f.alive) {
+                    self.feeding_game.reset();
+                    self.show_minigame = true;
+                    self.add_notification("🎮 Feeding Game! ←→ to move, catch the food!".to_string());
+                } else {
+                    self.add_notification("❌ Need fish to play! Press N first.".to_string());
+                }
+            }
             KeyCode::Char('x') => {
                 self.save_data.decorations.pop(); // Remove last one
                 self.add_notification("🗑️ Removed last decoration.".to_string());
@@ -459,8 +580,8 @@ impl App {
         // If there are dead fish, remove them first to make room
         self.save_data.fish.retain(|f| f.alive);
 
-        // Rotate species (0..7)
-        self.selected_species = (self.selected_species + 1) % 8;
+        // Rotate species (0..14)
+        self.selected_species = (self.selected_species + 1) % 15;
         
         // Get species info
         let (species_name, emoji) = match self.selected_species {
@@ -472,6 +593,13 @@ impl App {
             5 => ("Clownfish", "🟠"),
             6 => ("Koi", "🎏"),
             7 => ("Pufferfish", "🐡"),
+            8 => ("Seahorse", "🌊"),
+            9 => ("Swordfish", "⚔️"),
+            10 => ("Discus", "🔵"),
+            11 => ("Piranha", "🦷"),
+            12 => ("Jellyfish", "🪼"),
+            13 => ("Tang", "💙"),
+            14 => ("Catfish", "🐱"),
             _ => ("Goldfish", "🟡"),
         };
         
@@ -495,6 +623,13 @@ impl App {
             5 => Fish::new_clownfish(name.clone()),
             6 => Fish::new_koi(name.clone()),
             7 => Fish::new_pufferfish(name.clone()),
+            8 => Fish::new_seahorse(name.clone()),
+            9 => Fish::new_swordfish(name.clone()),
+            10 => Fish::new_discus(name.clone()),
+            11 => Fish::new_piranha(name.clone()),
+            12 => Fish::new_jellyfish(name.clone()),
+            13 => Fish::new_tang(name.clone()),
+            14 => Fish::new_catfish(name.clone()),
             _ => Fish::new_goldfish(name.clone()),
         };
         
@@ -581,7 +716,7 @@ impl App {
             }
             "surprise_fry" => {
                 if self.save_data.fish.iter().filter(|f| f.alive).count() < 10 {
-                    let species_id = rand::random::<usize>() % 8;
+                    let species_id = rand::random::<usize>() % 15;
                     let name = format!("Surprise {}", self.save_data.fish.len() + 1);
                     let mut new_fish = match species_id {
                         0 => crate::models::Fish::new_goldfish(name),
@@ -591,7 +726,15 @@ impl App {
                         4 => crate::models::Fish::new_angelfish(name),
                         5 => crate::models::Fish::new_clownfish(name),
                         6 => crate::models::Fish::new_koi(name),
-                        _ => crate::models::Fish::new_pufferfish(name),
+                        7 => crate::models::Fish::new_pufferfish(name),
+                        8 => crate::models::Fish::new_seahorse(name),
+                        9 => crate::models::Fish::new_swordfish(name),
+                        10 => crate::models::Fish::new_discus(name),
+                        11 => crate::models::Fish::new_piranha(name),
+                        12 => crate::models::Fish::new_jellyfish(name),
+                        13 => crate::models::Fish::new_tang(name),
+                        14 => crate::models::Fish::new_catfish(name),
+                        _ => crate::models::Fish::new_goldfish(name),
                     };
                     // Set as baby fish
                     new_fish.stage = crate::models::GrowthStage::Fry;

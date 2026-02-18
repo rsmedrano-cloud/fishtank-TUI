@@ -56,6 +56,13 @@ pub enum Species {
     Clownfish,
     Koi,
     Pufferfish,
+    Seahorse,
+    Swordfish,
+    Discus,
+    Piranha,
+    Jellyfish,
+    Tang,
+    Catfish,
 }
 
 impl Species {
@@ -69,6 +76,13 @@ impl Species {
             Species::Clownfish => "Clownfish",
             Species::Koi => "Koi",
             Species::Pufferfish => "Pufferfish",
+            Species::Seahorse => "Seahorse",
+            Species::Swordfish => "Swordfish",
+            Species::Discus => "Discus",
+            Species::Piranha => "Piranha",
+            Species::Jellyfish => "Jellyfish",
+            Species::Tang => "Tang",
+            Species::Catfish => "Catfish",
         }
     }
 }
@@ -266,6 +280,159 @@ impl Fish {
         }
     }
 
+    pub fn new_seahorse(name: String) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            species: Species::Seahorse,
+            name,
+            hunger: 75.0,
+            happiness: 80.0,
+            health: 100.0,
+            energy: 85.0,
+            age: Duration::zero(),
+            stage: GrowthStage::Fry,
+            gender: Self::random_gender(),
+            position: Self::random_position(),
+            velocity: (0.004, 0.005), // Slow, more vertical
+            state: FishState::Swimming,
+            alive: true,
+            created_at: Utc::now(),
+            last_fed: None,
+            mate_cooldown: 0,
+        }
+    }
+
+    pub fn new_swordfish(name: String) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            species: Species::Swordfish,
+            name,
+            hunger: 85.0,
+            happiness: 75.0,
+            health: 100.0,
+            energy: 100.0,
+            age: Duration::zero(),
+            stage: GrowthStage::Fry,
+            gender: Self::random_gender(),
+            position: Self::random_position(),
+            velocity: (0.018, 0.0), // Fast swimmer
+            state: FishState::Swimming,
+            alive: true,
+            created_at: Utc::now(),
+            last_fed: None,
+            mate_cooldown: 0,
+        }
+    }
+
+    pub fn new_discus(name: String) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            species: Species::Discus,
+            name,
+            hunger: 80.0,
+            happiness: 85.0,
+            health: 100.0,
+            energy: 90.0,
+            age: Duration::zero(),
+            stage: GrowthStage::Fry,
+            gender: Self::random_gender(),
+            position: Self::random_position(),
+            velocity: (0.006, 0.0), // Slow and elegant
+            state: FishState::Swimming,
+            alive: true,
+            created_at: Utc::now(),
+            last_fed: None,
+            mate_cooldown: 0,
+        }
+    }
+
+    pub fn new_piranha(name: String) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            species: Species::Piranha,
+            name,
+            hunger: 65.0, // Gets hungry fast
+            happiness: 70.0,
+            health: 100.0,
+            energy: 100.0,
+            age: Duration::zero(),
+            stage: GrowthStage::Fry,
+            gender: Self::random_gender(),
+            position: Self::random_position(),
+            velocity: (0.014, 0.0), // Quick and aggressive
+            state: FishState::Swimming,
+            alive: true,
+            created_at: Utc::now(),
+            last_fed: None,
+            mate_cooldown: 0,
+        }
+    }
+
+    pub fn new_jellyfish(name: String) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            species: Species::Jellyfish,
+            name,
+            hunger: 70.0,
+            happiness: 90.0,
+            health: 100.0,
+            energy: 80.0,
+            age: Duration::zero(),
+            stage: GrowthStage::Fry,
+            gender: Self::random_gender(),
+            position: Self::random_position(),
+            velocity: (0.003, 0.004), // Floaty drifter
+            state: FishState::Swimming,
+            alive: true,
+            created_at: Utc::now(),
+            last_fed: None,
+            mate_cooldown: 0,
+        }
+    }
+
+    pub fn new_tang(name: String) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            species: Species::Tang,
+            name,
+            hunger: 75.0,
+            happiness: 85.0,
+            health: 100.0,
+            energy: 95.0,
+            age: Duration::zero(),
+            stage: GrowthStage::Fry,
+            gender: Self::random_gender(),
+            position: Self::random_position(),
+            velocity: (0.011, 0.0),
+            state: FishState::Swimming,
+            alive: true,
+            created_at: Utc::now(),
+            last_fed: None,
+            mate_cooldown: 0,
+        }
+    }
+
+    pub fn new_catfish(name: String) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            species: Species::Catfish,
+            name,
+            hunger: 85.0,
+            happiness: 75.0,
+            health: 100.0,
+            energy: 85.0,
+            age: Duration::zero(),
+            stage: GrowthStage::Fry,
+            gender: Self::random_gender(),
+            position: (Self::random_position().0, 0.8), // Bottom dweller
+            velocity: (0.006, 0.0), // Slow, stays low
+            state: FishState::Swimming,
+            alive: true,
+            created_at: Utc::now(),
+            last_fed: None,
+            mate_cooldown: 0,
+        }
+    }
 
 }
 
@@ -420,6 +587,13 @@ impl Fish {
             Species::Clownfish => Fish::new_clownfish("Baby".to_string()),
             Species::Koi => Fish::new_koi("Baby".to_string()),
             Species::Pufferfish => Fish::new_pufferfish("Baby".to_string()),
+            Species::Seahorse => Fish::new_seahorse("Baby".to_string()),
+            Species::Swordfish => Fish::new_swordfish("Baby".to_string()),
+            Species::Discus => Fish::new_discus("Baby".to_string()),
+            Species::Piranha => Fish::new_piranha("Baby".to_string()),
+            Species::Jellyfish => Fish::new_jellyfish("Baby".to_string()),
+            Species::Tang => Fish::new_tang("Baby".to_string()),
+            Species::Catfish => Fish::new_catfish("Baby".to_string()),
         };
         
         // Inherit some position

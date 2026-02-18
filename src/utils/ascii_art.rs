@@ -22,7 +22,14 @@ impl FishSprite {
                     Species::Angelfish => if facing_right { &[">^>"] } else { &["<^<"] },
                     Species::Clownfish => if facing_right { &[">|>"] } else { &["<|<"] },
                     Species::Koi => if facing_right { &[">S>"] } else { &["<S<"] },
-                    Species::Pufferfish => if facing_right { &[">()"] } else { &["()<"] },
+                    Species::Pufferfish => if facing_right { &[">()" ] } else { &["()<"] },
+                    Species::Seahorse => if facing_right { &["}S>"] } else { &["<S{"] },
+                    Species::Swordfish => if facing_right { &[">==>"] } else { &["<==<"] },
+                    Species::Discus => if facing_right { &[">(O)"] } else { &["(O)<"] },
+                    Species::Piranha => if facing_right { &[">V>"] } else { &["<V<"] },
+                    Species::Jellyfish => if facing_right { &["(~)"] } else { &["(~)"] },
+                    Species::Tang => if facing_right { &["><|>"] } else { &["<|><"] },
+                    Species::Catfish => if facing_right { &[">==>"] } else { &["<==<"] },
                 }
             },
             GrowthStage::Adult => {
@@ -115,6 +122,85 @@ impl FishSprite {
                              "  ..", 
                              "<(( ))<" 
                         ] 
+                    },
+                    Species::Seahorse => if facing_right {
+                        &[
+                            "  ?",
+                            " }S)",
+                        ]
+                    } else {
+                        &[
+                            " ?",
+                            "(S{",
+                        ]
+                    },
+                    Species::Swordfish => if facing_right {
+                        &[
+                            "    __",
+                            "><==(((>",
+                        ]
+                    } else {
+                        &[
+                            "  __",
+                            "<))))==<",
+                        ]
+                    },
+                    Species::Discus => if facing_right {
+                        &[
+                            "  _.",
+                            ">(O°)>",
+                        ]
+                    } else {
+                        &[
+                            "  ._",
+                            "<(°O)<",
+                        ]
+                    },
+                    Species::Piranha => if facing_right {
+                        &[
+                            "  ,·",
+                            "><VvV>",
+                        ]
+                    } else {
+                        &[
+                            " ·,",
+                            "<VvV><",
+                        ]
+                    },
+                    Species::Jellyfish => if facing_right {
+                        &[
+                            " .--.",
+                            "(~~~~)",
+                            " ||||",
+                        ]
+                    } else {
+                        &[
+                            " .--.",
+                            "(~~~~)",
+                            " ||||",
+                        ]
+                    },
+                    Species::Tang => if facing_right {
+                        &[
+                            "  /|",
+                            "><||)>",
+                        ]
+                    } else {
+                        &[
+                            " |\\",
+                            "<(||><",
+                        ]
+                    },
+                    Species::Catfish => if facing_right {
+                        &[
+                            " =,__",
+                            ">==(('>",
+                        ]
+                    } else {
+                        &[
+                            "  __,=",
+                            "<')))==<",
+                        ]
                     },
                 }
             }
