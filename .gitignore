@@ -19,3 +19,7 @@ Thumbs.db
 
 # Local saves (for development testing)
 .fishtank/
+
+# Local Release Workflow
+Dockerfile.build
+release_workflow.sh
